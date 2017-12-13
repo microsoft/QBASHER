@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-// dahash - header file  - Written by David Hawking, Bing, Dec 2013
+// dahash - header file  - Written by Developer1, Bing, Dec 2013
 
 // A detailed description of the dahash code is in dahash.cpp 
 

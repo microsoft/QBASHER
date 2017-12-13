@@ -211,9 +211,9 @@ void testGCD() {
   geoDebug = 1; // This function is only called in the indexer.  Extra
                 // output shouldn't matter
   gcd = greatCircleDistance(-37.819124, 144.968200, 37.691, -108.032);
-  printf("gcd(Bodo's example) = %.3fkm\n", gcd);
+  printf("gcd(Developer2's example) = %.3fkm\n", gcd);
   score = geoScore(-37.819124, 144.968200, 37.691, -108.032);
-  printf("geoScore(Bodo's example) = %.3f\n", score);
+  printf("geoScore(Developer2's example) = %.3f\n", score);
   gcd = greatCircleDistance(-35.26768, 149.12061, -35.307, 149.134);
   printf("gcd(Home, MSCanberra) = %.3fkm\n", gcd);  
   gcd = greatCircleDistance(-35.307, 149.134, -37.822, 144.962);
