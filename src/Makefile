@@ -64,7 +64,7 @@ cleanest: cleaner
 	 /bin/rm -rf imported/pcre2/x64  imported/pcre2/Debug imported/pcre2/Release imported/pcre2/ipch imported/pcre2/JIT  # all the VS PCRE stuff
 
 git:
-	git add Makefile ../scripts/*.pl */*.c */*.cs */*.txt */*.h */*.sln */*.vcxproj ../*.TXT ../test_data/wikipedia_titles*/QBASH.forward.bz2 ../test_data/[a-vx-zA-VX-Z]*/QBASH.forward ../test_data/*/QBASH.substitution_rules* ../test_queries/*.q ../*/README.txt ../doc/*.tex #*/*.csproj */App.config */Properties/AssemblyInfo.cs
+	git add Makefile ../scripts/*.pl */*.c */*.cs */*.txt */*.h */*.sln */*.vcxproj imported/*/*.c imported/*/*.txt imported/*/*.h imported/*/*.sln imported/*/*.vcxproj ../*.TXT ../test_data/wikipedia_titles*/QBASH.forward.bz2 ../test_data/[a-vx-zA-VX-Z]*/QBASH.forward ../test_data/*/QBASH.substitution_rules* ../test_queries/*.q ../*/README.txt ../doc/*.tex #*/*.csproj */App.config */Properties/AssemblyInfo.cs
 	#
 	# Please run "grep 'if (1' */*.c" and check output for unwanted output
 	# ...  now run git commit -m \"<commit message>\" and git push"
