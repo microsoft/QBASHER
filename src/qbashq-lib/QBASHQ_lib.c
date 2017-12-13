@@ -333,7 +333,7 @@ static void display_op_counts(query_processing_environment_t *qoenv, book_keepin
 
 static void display_shard_stats(query_processing_environment_t *qoenv, book_keeping_for_one_query_t *qex, int timeout_kops,
 				int tl_returned, u_char **tl_suggestions) {
-  // Display op count and timeout info.  In format similar to that requested by Bodo
+  // Display op count and timeout info.  In format similar to that requested by Developer2
   // Shard<tab>1<tab>time<tab>25.2<tab>numberOfCandidatesVetted<tab>100<tab>numberOfCandidatesReturned<tab>8<tab>etc
   int c, total_cost = 0;
   u_char timed_out;
@@ -2538,7 +2538,7 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
     else if (qoenv->debug >= 1) printf("No explicit vertical intent signal.\n");
 
     if (qoenv->display_parsed_query) {
-      // [Bodo] What I really wanted is to get the final query with punctuation removed -
+      // [Developer2] What I really wanted is to get the final query with punctuation removed -
       // but I guess you don't keep that around?!
       // (Instead the parsed query is placed directly into a structured query.)
       // Also this version isn't useful unless only a single thread is run in parallel (-query_streams=1)

@@ -105,7 +105,7 @@ static char *final_removals_at_tail[] =
 #define MAX_PATTERN 100
 
 int apply_lyrics_specific_rules(char *qstring) {
-  // If the qstring includes one of many patterns identified by Bodo (email of 18 Feb 2015) then 
+  // If the qstring includes one of many patterns identified by Developer2 (email of 18 Feb 2015) then 
   // remove the lyrics-intent-specific parts of qstring and return non-zero
   // We assume qstring has been lower cased and space-normalized
   char pattern[MAX_PATTERN + 1], *r, *w, *ss, *tail;
@@ -282,7 +282,7 @@ int apply_carousel_specific_rules(char *qstring) {
 
 
 int apply_magic_songs_specific_rules(char *qstring) {
-  // According to Bodo's interpretation of Fang Zhang's rules, the word lyrics (regardless of case)
+  // According to Developer2's interpretation of Fang Zhang's rules, the word lyrics (regardless of case)
   // should only be removed at the beginning XOR the end, not in the middle.
   int yes = 0;
   BOOL verbose = FALSE;
@@ -314,7 +314,7 @@ int apply_magic_movie_specific_rules(char *qstring){
   if (!yes) yes = substitute((u_char *)qstring, (u_char *)"movie that", (u_char *)"", NULL, FALSE);
 
   if (yes) {
-    // We know it's a magic_movie, apply Bodo's query treatments....
+    // We know it's a magic_movie, apply Developer2's query treatments....
   }
 
   return yes;
@@ -1211,7 +1211,7 @@ void classifier(query_processing_environment_t *local_qenv, book_keeping_for_one
 
 
 #ifdef SIGNAL_AMBIGUITY
-    // We don't check for AMBIGUITY any more because it causes Bodo problems.
+    // We don't check for AMBIGUITY any more because it causes Developer2 problems.
     // Instead leave it to the consumer
 #define SCORE_GAP_THRESH 0.25
 #define BAG_SIMILARITY_THRESH 0.75

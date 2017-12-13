@@ -64,7 +64,6 @@ cleanest: cleaner
 	 /bin/rm -rf imported/pcre2/x64  imported/pcre2/Debug imported/pcre2/Release imported/pcre2/ipch imported/pcre2/JIT  # all the VS PCRE stuff
 
 git:
-	git add `find . -iname \*.pl`
 	git add `find . -iname \*.c`
 	git add `find . -iname \*.h`
 	git add `find . -iname \*.cs`
@@ -72,7 +71,8 @@ git:
 	git add `find . -iname App.config`
 	git add `find . -iname \*.sln`
 	git add `find . -iname \*.vcxproj`
-	git add `find . -iname \*.txt`
+	git add `find .. -iname \*.pl`
+	git add `find .. -iname \*.txt`
 	git add `find .. -iname \*README\*`
 	git add `find .. -iname \*LICENSE\*`
 	git add `find .. -iname \*VERSION\*`

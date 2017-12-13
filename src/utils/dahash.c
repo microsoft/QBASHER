@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license.
 
-// dahash - function definitions  - Written by David Hawking, Bing, Dec 2013 
+// dahash - function definitions  - Written by developer1, Bing, Dec 2013 
 
 // A dahash hashtable consists of a control block (an instance of dahash_table_t) which 
 // records all the properties of the table, and includes a link to a block of memory
