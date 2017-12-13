@@ -168,7 +168,7 @@ if ($runverylongtests) {
 
 
 if ($reindex) {
-    print "Re-indexing collections needed to run the tests ...\n\n";
+    print "Bunzipping (if nec.) and re-indexing collections needed to run the tests ...\n\n";
     $global_abort = 0;
 
     for ($th = 0; $th < $ithreads; $th++) {
@@ -176,6 +176,18 @@ if ($reindex) {
 	    # ------------------------ Child code -------------------------------
 	    for ($nix = $th; $nix <= $#indexes; $nix += $ithreads) {
 		if ($global_abort) {last;}
+
+		if (! (-e "$idxdir/$indexes[$nix]/QBASH.forward")) {
+		    if (! (-e "$idxdir/$indexes[$nix]/QBASH.forward.bz2")) {
+			die "Can't find either $idxdir/$indexes[$nix]/QBASH.forward or its bzipped version.\n";
+		    } else {
+			$cmd = "bunzip2 -k $idxdir/$indexes[$nix]/QBASH.forward.bz2";
+			print $cmd, "\n";
+			$code = system($cmd);
+			die "Bunzipping command $cmd failed with code $code\n"
+			    if $code;		
+		    }
+		}
 		print "\n$indexes[$nix] ...\n";
 		$cmd = "$binDir/QBASHI.exe index_dir=$idxdir/$indexes[$nix] > $idxdir/$indexes[$nix]/index.log";
 		$code = system($cmd);
