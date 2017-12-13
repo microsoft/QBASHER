@@ -1,0 +1,11 @@
+The version number of this distribution is defined in src/shared/QBASHER_common_definitions.h.  It is
+the concatenation of INDEX_FORMAT and QBASHER_VERSION.
+
+If either of the QBASHER executables is run on the command line with no options a help message 
+which includes the version number will be displayed.
+
+To determine the version of a running QBASHQ service, you can submit the "Easter Egg" query
+
+	gonebut notforgotten
+
+

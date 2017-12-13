@@ -1,0 +1,284 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{url}
+\usepackage{color}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{listings}
+\usepackage{palatino}
+
+\newcommand{\red}[1]{{\color{red}{\emph{#1}}}}
+\newcommand{\projectName}{\texttt{QBASHER}}
+
+\title{Introduction to QBASHER\\
+  \large ~\\
+  Version 1.5.121-OS}
+\author{Microsoft}
+
+\begin{document}
+\maketitle{}
+
+
+QBASHER is a stand-alone indexing and querying system, based on an
+inverted file format optimized for short texts.  Example short text
+collections include academic paper titles, song lyric lines, and logs
+of search queries.  QBASHER is capable of supporting
+word-order-independent query auto-suggest, query
+classification, and simple retrieval.
+
+QBASHER is designed to handle many billions of records in a single
+index and to achieve high query processing rates and low latency query
+responses.  Data to be indexed is expected to be in TSV format with a
+minimum of two columns.  Column one contains the document text, column
+two is expected to contain a numeric quantity representing the static
+score (popularity, authority, etc) of the document. Extra columns
+may contain additional application-specific information such as
+latitude and longitude, object-id within a knowledge base, or a
+display-oriented form of the document.   In normal operation, QBASHER
+internally reorders documents into order of descending static score,
+after normalising the scores into the range $0-1$.  During retrieval,
+candidates are ranked by a linear combination $\alpha - \theta$ of
+features including the static score.  One of the features is a BM25
+score. In a query classification scenario, different features are
+used: $\omega - \chi$.
+
+In order to calculate features used in scoring candidates and to
+perform matching of word prefixes and rank-only words, QBASHER uses
+the raw document text as its own ``per-document-index''.  In other
+words, features are checked or calculated using string scanning.  This
+makes sense given the assumed shortness of the documents.  To cut down
+on the amount of scanning required a Bloom filter based on word first
+letters is used.
+
+QBASHER has three essential components:
+
+\begin{description}
+\item [QBASHI] Indexer executable
+  \item [QBASHQ-LIB] Library implementing the query processing API for
+    both C and C\# p-invoke front-ends.
+    \item [QBASHQ or QBASHQsharpNative] Query processing front-ends
+      in C and C\# respectively which process queries using the
+      QBASHQ-LIB libraries.
+\end{description}
+
+    
+
+QBASHER supports the following query processing operators:
+
+\vspace{3mm}
+\begin{tabular}{|r|l|}
+  \hline
+\texttt{"..."}& Phrase match, e.g. \texttt{"san francisco"} \\
+\texttt{[...]}& Disjunction, e.g. \texttt{[cat dog] food}\\
+\texttt{\~}& Rank-only operator, e.g. \verb|queens of england ~victoria|\\
+\texttt{/}& Match a word prefix, e.g. \texttt{Seattle /seah}\\
+\verb|<|& Match a line prefix, e.g. \texttt{<Faceb}\\
+Phrase within disjunction& e.g. \texttt{["mountain lion" "snow
+    leopard"]} \\
+Disjunction within phrase& e.g. \texttt{"[metal plastic] lid"}\\
+\hline
+\end{tabular}
+\vspace{3mm}
+
+QBASHER is written in C and can be built with either GCC or Visual
+Studio 2015.  The query processing logic is implemented in a DLL
+which has an API, designed to be ``p-invoked'' from a C-sharp main program.
+An example C-sharp main program is included for illustration and testing
+purposes.
+
+The \texttt{QBASHER/scripts} directory contains a reasonably
+extensive suite of test scripts, written in \texttt{perl5}.  These
+tests must pass prior to checking in any modifications to the code.
+
+
+
+\section{Getting going with \projectName}
+
+\subsection{Obtaining \projectName}
+
+Assuming you are working with a Unix style shell, e.g. on Linux or MacOSx,
+under Cygwin, or under Ubuntu Bash for Windows 10 ....
+
+\begin{verb}
+git clone "https://github.com/Microsoft/QBASHER"
+\end{verb}
+
+
+\subsection{Prerequisites}
+
+To use the system you need to build executables from their sources.
+For this you need to have installed either \texttt{gcc} and
+\texttt{make} or Microsoft Visual Studio 2015.
+
+To use the system you will also need to have \texttt{perl 5}
+installed.  Finally, to re-generate the PDF of this document you will
+need a version of LaTeX.
+
+\subsection{Building with gcc / make}
+
+If you have \texttt{gcc}, \texttt{make}, and \texttt{perl5} installed
+and in your path you can just type:
+
+\begin{verbatim}
+cd QBASHER/src    # Change to the src directory of the cloned repository
+make cleanest
+make
+\end{verbatim}
+
+Later, you can save some time by using 'make cleaner' instead of 'make
+cleanest' -- it avoids the rebuilding of the PCRE2 libraries.
+
+Libraries and executables will appear in the QBASHER/src directory.
+
+\noindent To run the build tests:
+
+\begin{verbatim}
+cd QBASHER/scripts    # Change to the src directory of the cloned repository
+./qbash\_run\_tests.pl GCC
+\end{verbatim}
+
+See also QBASHER/scripts/README.txt and QBASHER/test\_queries/README.txt
+
+
+\subsection{Building with Visual Studio 2015}
+
+To build the executable using Visual Studio 2015 (VS 2015), please navigate to
+\texttt{QBASHER/src/visual\_studio} using the file explorer, then
+double click on \texttt{visual\_studio.sln}. That should open the VS
+2015 application.  In the lower part of the toolbar at the top
+of the VS window, select \texttt{Release} and \texttt{x64} from the
+first and second drop-downs.  (The QBASHER design assumes 64-bit.
+You will need to change a number of configuration parameters if you
+wish to build a Debug version.)
+Then click on \texttt{Rebuild solution}
+from the \texttt{Build} menu.  
+
+\noindent Assuming the build succeeds you should see:
+
+\begin{verbatim}
+========== Rebuild All: 9 succeeded, 0 failed, 0 skipped ==========
+\end{verbatim}
+
+\noindent in the output pane, and all the EXEs and DLLs will be in:
+
+\begin{verbatim}
+QBASHER/src/visual_studio/x64/Release/
+\end{verbatim}
+
+\noindent You can then run the build test scripts:
+\begin{verbatim}
+cd QBASHER/scripts    
+./qbash\_run\_tests.pl   
+\end{verbatim}
+
+
+
+\section{Help on options}
+If you run any of the .EXE files from the command line, without
+specifying any options, that EXE will print a list of all available
+options, each with its default value and a one line description.
+Options whose names start with ``x\_'' are considered experimental and
+are more likely to be removed or changed in future releases.    At the
+time of writing (12 Dec 2017) there are some such options which have
+proved their worth and which have been thoroughly tested, but which
+have not had the 'x\_' dropped.
+
+
+\section{Examples of command-line usage}
+
+In each of the following examples, it is assumed that the current
+working directory is one level above the \texttt{src} directory, and
+that there is a \texttt{data\_data/wikipedia\_titles} directory containing a file
+\texttt{QBASH.forward} in TSV format with the records to be
+indexed in column one, static weights in column two, text for display
+in column three.
+
+
+\subsection{Simplest indexing of a data set}
+
+{\footnotesize
+\begin{verbatim}
+src/visual_studio/x64/Release/QBASHI.exe index_dir=data
+\end{verbatim}
+}
+
+\noindent The \texttt{QBASH.forward} file is indexed, resulting in three
+additional files being created in the same directory:
+\texttt{QBASH.if}, \texttt{QBASH.vocab}, \texttt{QBASH.doctable}.
+Remember that \texttt{QBASH.forward} is also part of the index and is
+needed for query processing.  Note that, by default, the records in
+\texttt{QBASH.forward} are internally (i.e. no change to the file
+itself) sorted in descending static score order.
+
+\subsection{Running a single query against the simplest index}
+{\footnotesize
+\begin{verbatim}
+src/visual_studio/x64/Release/QBASHQ.exe
+                index_dir=test_data/wikipedia_titles -pq="united states elections"
+src/visual_studio/x64/Release/QBASHQ.exe
+                index_dir=test_data/wikipedia_titles -pq="united states elections /pr"
+src/visual_studio/x64/Release/QBASHQ.exe
+               index_dir=test_data/wikipedia_titles -pq="united states elections pr" -auto_partials=ON
+\end{verbatim}
+}
+
+\noindent In the first example, \texttt{QBASHQ} retrieves up to eight records which
+contain all three words and ranks them in descending order of static
+score:
+{\footnotesize
+\begin{verbatim}
+Voter turnout in the United States presidential elections       0.62035
+United States elections, 2016   0.60078
+List of United States presidential elections by popular vote margin     0.56947
+List of third party performances in United States elections     0.51663
+List of United States presidential elections by Electoral College margin        0.48337
+United States elections, 2014   0.48337
+United States House of Representatives elections, 2012  0.47945
+United States Senate elections, 2018    0.44031
+
+\end{verbatim}
+}
+
+\noindent In the second example, the \texttt{/pr} indicates that ``pr'' is to be
+treated as a word prefix rather than a word.   The set of records
+containing ``united'', ``states'', and  ``elections'' are filtered to remove those which
+don't contain a word beginning with ``pr''.  
+
+{\footnotesize
+\begin{verbatim}Voter turnout in the United States presidential elections       0.62035
+List of United States presidential elections by popular vote margin     0.56947
+List of United States presidential elections by Electoral College margin        0.48337
+Electoral vote changes between United States presidential elections     0.37573
+Lists of newspaper endorsements in United States presidential elections 0.33072
+United States presidential elections in Missouri        0.24853
+United States presidential elections    0.18591
+Canada and the United States presidential elections     0.18591
+
+\end{verbatim}
+}
+
+\noindent The third example produces exactly the same results as the second,
+because the \texttt{auto\_partials} option treats the last word in the
+query (unless followed by a space) as though it had a leading slash.
+
+
+\subsection{Running a batch of queries against the simplest index}
+{\footnotesize
+\begin{verbatim}
+src/visual_studio/x64/Release/QBASHQ.exe
+                index_dir=test_data/wikipedia_titles -file_query_batch=test_queries/emulated_log_1k.q 
+src/visual_studio/x64/Release/QBASHQ.exe
+                index_dir=test_data/wikipedia_titles
+                -file_query_batch=test_queries/emulated_log_1k.q -query_streams=1
+\end{verbatim}
+}
+
+Assuming that \texttt{test\_queries/emulated\_log\_1k.q} contains a
+set of queries, one per line, the first example will run all the
+queries and print the results on standard output.   The queries will
+be run using multiple (ten by default) threads, and the order of
+results will not in general correspond to the order of queries in the
+query batch.   In the second example, the \texttt{query\_streams}
+option runs the queries single-threaded and presents results in the
+same order as the queries appear in the file.
+
+\end{document}
