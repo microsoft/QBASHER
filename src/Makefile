@@ -5,7 +5,7 @@ CC=/usr/bin/gcc
 # slower than the the unthreaded version :-(   Surely there must be a bug in
 # my logic (the threading model is different to the windows one.)
 CFLAGS=-O3 -std=c11 -m64 -Wall -DNO_THREADS # No need for -fPIC... "All code is position-independent"
-LDFLAGS=-g -lm
+LDLIBS=-lm
 
 # For an explanation of automatic variables (e.g.$@, $? and $^) see
 # https://www.gnu.org/software/make/manual/make.html#Automatic-Variables
@@ -20,7 +20,7 @@ all: QBASHI.exe libpcre2 libQBASHQ-LIB.a QBASH_vocab_lister.exe TFdistribution_f
 
 
 QBASHI.exe: QBASHI/arg_parser.o QBASHI/input_buffer_management.o  QBASHI/QBASHI.o QBASHI/Write_Inverted_File.o utils/dahash.o utils/linked_list.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o utils/dynamic_arrays.o utils/latlong.o shared/QBASHER_common_definitions.h
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 QBASHQ_OBJECTS=qbashq-lib/QBASHQ_lib.o qbashq-lib/arg_parser.o qbashq-lib/classification.o qbashq-lib/error_explanations.o qbashq-lib/saat.o qbashq-lib/relaxation.o  qbashq-lib/query_shortening.o shared/utility_nodeps.o shared/unicode.o shared/substitutions.o utils/latlong.o utils/street_addresses.o
 
@@ -36,20 +36,20 @@ libpcre2:
 
 
 QBASH_vocab_lister.exe: vocab_lister/QBASH_vocab_lister.o shared/utility_nodeps.o shared/unicode.o shared/QBASHER_common_definitions.h
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
 TFdistribution_from_TSV.exe : TFdistribution_from_TSV/TFdistribution_from_TSV.o utils/dahash.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o shared/QBASHER_common_definitions.h
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 QBASHQ.exe: qbashq/QBASHQ.o libQBASHQ-LIB.a libpcre2
-	$(CC) $(LDFLAGS) -o $@ qbashq/QBASHQ.o -L./ -lQBASHQ-LIB -Limported/ -lpcre2
+	$(CC) $(LDFLAGS) -o $@ qbashq/QBASHQ.o -L./ -lQBASHQ-LIB -Limported/ -lpcre2 $(LDLIBS)
 
 generate_fuzz_queries.exe: generate_fuzz_queries/generate_fuzz_queries.o
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 dahash_demo.exe:	utils/dahash_demo.o utils/dahash.o imported/Fowler-Noll-Vo-hash/fnv.o shared/unicode.o shared/utility_nodeps.o
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 clean:
 	/bin/rm -f *.a *.exe *.dll *.so
