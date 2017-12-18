@@ -76,14 +76,14 @@ close(R);
 
 print "Generating the autosuggest test file ...\n\n";
 
-$cmd = "./make_autosuggest_robustness_queries.pl < ${stem}_100k.q > ${stem}_100k_autopartials.q";
+$cmd = "$^X ./make_autosuggest_robustness_queries.pl < ${stem}_100k.q > ${stem}_100k_autopartials.q";
 $code = system($cmd);
 die "$cmd failed with code $code\n"
     if $code;
 
 print "Generating the test file with randomly inserted operators ...\n\n";
 
-$cmd = "./randomly_insert_qbasher_operators.pl < ${stem}_10k.q > ${stem}_four_words_with_operators.q";
+$cmd = "$^X ./randomly_insert_qbasher_operators.pl < ${stem}_10k.q > ${stem}_four_words_with_operators.q";
 $code = system($cmd);
 die "$cmd failed with code $code\n"
     if $code;

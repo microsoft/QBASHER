@@ -1,0 +1,75 @@
+Using the QBASHQ substitution rules mechanism
+=============================================
+
+18 Dec 2017.
+
+
+Substitution rules work as follows: 
+-----------------------------------
+1. The substitution rules file contains one tab separated rule per
+   line.  <LHS> TAB <RHS>
+2. LHS can be any perl5-compatible regular expression including
+   capturing expressions.
+3. RHS is the replacement string which can include variables such
+   as $2 which means “the text matched by the second capturing
+   expression”.
+4. Regular expression matching uses the third-party PCRE2 library
+   and specifies PCRE2_UTF and PCRE2_CASELESS options.  I.e.
+   matching is case-insensitive and expects patterns and strings
+   in UTF-8
+5. Rules are applied in the order in which they occur in the
+   rules file.
+6. Only one pass is made through the rules.
+7. A rule may cause multiple substitutions.  E.g.
+   “singing TAB singin” will replace every occurrence of ‘singing’
+   in the query.
+8. Substitution rules are also applied to candidate documents, UNLESS
+   the RHS contain QBASHQ query operators (double quotes and square
+   brackets) and UNLESS the candidate document length is less than
+   256 bytes.  Note that the system allows for growth beyond 256 bytes
+   as a result of substitutions. For example, a substitution rule
+   might replace occurrences of 'dancin' with 'dancing' in both the
+   query and candidate documents.   *** Further thought on this may
+   lead to changes in this mechanism. ***
+
+
+Substitution is applied after:
+------------------------------
+1.	Lower casing of the query.
+2.	Accent removal (if accent conflation is turned on)
+3.	Street address processing – Removal of things like ‘Unit 10’
+        or ‘Suite 4’ plus removal and recording of house
+	numbers. 
+
+
+Substitution is applied before:
+-------------------------------
+1.	Normalization of delimiters.  (Removing punctuation, ensuring
+	correct balancing of phrases and disjunctions which may have
+	been introduced by substitutions.)
+2.	Removal of segment-intent words, e.g lyrics segment words such
+	as “words of”, “lyrics for”.
+3.	Query shortening, if turned on.
+
+
+Multiple substitution rules files:
+----------------------------------
+Substitution rules are only activated when the -use_substitions
+option is set to TRUE, or ON, and the appropriate substitution rules
+file exists and is readable.  When QBASHQ is used from the command
+line the substition rules file is expected to be either a file name
+specified explicitly as the value of -file_substitution_rules=, OR
+a file in the index_dir called QBASH.substitution_rules_XX, where XX
+is a two letter code supplied as the value of the -language= option.
+
+The intention of this mechanism is to allow different sets of
+substitution rules for different languages, e.g. EN, FR, DE etc.
+There is nothing to stop you using any two-letter code, such as
+LY (for lyrics).
+
+
+Additional notes:
+-----------------
+Latency will deteriorate if there are too many rules in the file.  It
+seems that 50 or so rules is OK but that depends upon the rules and on
+the length of the queries.
