@@ -102,7 +102,7 @@ print "\n\nConverting @qsets into multi queries.  For
 each input query, a triple is generated: the input query in quotes, the original query, and (if possible) 
 the original query with a word dropped. ...\n";
 
-$cmd = "./make_multi_queries.pl @qsets > multi-queries.mq\n";
+$cmd = "$^X ./make_multi_queries.pl @qsets > multi-queries.mq\n";
 $code = system($cmd);
 die "$cmd failed\n" if $code;
 

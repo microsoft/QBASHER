@@ -53,7 +53,7 @@ foreach $qset (@qsets) {
 	die "Error getting QS File $qsfile\n" if $code;
 	# Now do the comparison
 	print "$QS query streams: ";
-	$cmd = "$comparator $reffile $qsfile";
+	$cmd = "$^X $comparator $reffile $qsfile";
 	$code = system($cmd);
 	die "Error comparison failed\n" if $code;
     }

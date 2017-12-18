@@ -295,6 +295,6 @@ sub run_test {
 
     print "\n\n\n   -------------- $script ----------------\n";
 
-    $cmd = "$script $binDir/QBASHQ.exe";
+    $cmd = "$^X $script $binDir/QBASHQ.exe";
     return system($cmd);
 }

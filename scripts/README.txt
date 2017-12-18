@@ -13,12 +13,14 @@ latency or throughput.
 
 A. RUNNING THE TEST SUITE FOR THE FIRST TIME (OR AFTER CHANGING THE INDEXER)
 ----------------------------------------------------------------------------
-   ./qbash_run_tests.pl RI       # if you have built QBASHER using Visual
-                                 # Studio 2015, or
-   ./qbash_run_tests.pl GCC RI   # if you have built QBASHER using gcc/make
+   perl ./qbash_run_tests.pl RI       # if you have built QBASHER using 
+                                      # Visual Studio 2015, or
+   perl ./qbash_run_tests.pl GCC RI   # if you have built QBASHER
+                                      # using gcc/make
 
 The RI option causes the data sets in ../test_data to be rebuilt, and
-then runs the full set of tests.
+then runs the full set of tests. The 'perl' should be the path to your
+perl5 interpreter, or just perl if it's in your path.
 
 
 
@@ -63,7 +65,7 @@ All the scripts in the test suite are named
 'qbash_<testname>_check.pl'.  You can run any of them individually
 using:
 
-	./qbash_<testname>_check.pl <QBASHQ binary> [-fail_fast]
+	perl ./qbash_<testname>_check.pl <QBASHQ binary> [-fail_fast]
 
 To use the normal VS-built QBASHQ binary you can either use 'default' or
 'visual_studio/x64/Release/QBASHQ.exe'.  To use the gcc-built one you

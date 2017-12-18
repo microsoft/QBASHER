@@ -90,7 +90,6 @@ extensive suite of test scripts, written in \texttt{perl5}.  These
 tests must pass prior to checking in any modifications to the code.
 
 
-
 \section{Getting going with \projectName}
 
 \subsection{Obtaining \projectName}
@@ -167,10 +166,11 @@ QBASHER/src/visual_studio/x64/Release/
 \noindent You can then run the build test scripts:
 \begin{verbatim}
 cd QBASHER/scripts    
-./qbash\_run\_tests.pl   
+perl ./qbash\_run\_tests.pl   
 \end{verbatim}
 
-
+Where 'perl' is your favourite perl interpreter -- just perl if the
+interpreter is in your path.
 
 \section{Help on options}
 If you run any of the .EXE files from the command line, without
