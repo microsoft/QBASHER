@@ -4,7 +4,8 @@ CC=/usr/bin/gcc
 # the pthreads library is appallingly slow.  Ten threads runs about ten times
 # slower than the the unthreaded version :-(   Surely there must be a bug in
 # my logic (the threading model is different to the windows one.)
-CFLAGS=-O3 -std=c11 -m64 -Wall -DNO_THREADS # No need for -fPIC... "All code is position-independent"
+# -MD automatically makes a .d dependency file for each .c -MP allows that stuff to be used in the Makefile
+CFLAGS=-O3 -std=c11 -m64 -Wall -MP -MD -DNO_THREADS # No need for -fPIC... "All code is position-independent"
 LDLIBS=-lm
 
 # For an explanation of automatic variables (e.g.$@, $? and $^) see
@@ -19,12 +20,12 @@ LDLIBS=-lm
 all: QBASHI.exe libpcre2 libQBASHQ-LIB.a QBASH_vocab_lister.exe TFdistribution_from_TSV.exe QBASHQ.exe generate_fuzz_queries.exe
 
 
-QBASHI.exe: QBASHI/arg_parser.o QBASHI/input_buffer_management.o  QBASHI/QBASHI.o QBASHI/Write_Inverted_File.o utils/dahash.o utils/linked_list.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o utils/dynamic_arrays.o utils/latlong.o shared/QBASHER_common_definitions.h
+QBASHI.exe: QBASHI/arg_parser.o QBASHI/input_buffer_management.o  QBASHI/QBASHI.o QBASHI/Write_Inverted_File.o utils/dahash.o utils/linked_list.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o utils/dynamic_arrays.o utils/latlong.o 
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 QBASHQ_OBJECTS=qbashq-lib/QBASHQ_lib.o qbashq-lib/arg_parser.o qbashq-lib/classification.o qbashq-lib/error_explanations.o qbashq-lib/saat.o qbashq-lib/relaxation.o  qbashq-lib/query_shortening.o shared/utility_nodeps.o shared/unicode.o shared/substitutions.o utils/latlong.o utils/street_addresses.o
 
-libQBASHQ-LIB.a:  $(QBASHQ_OBJECTS) shared/QBASHER_common_definitions.h
+libQBASHQ-LIB.a:  $(QBASHQ_OBJECTS) 
 	ar -cvr $@  $(QBASHQ_OBJECTS)
 
 libpcre2:
@@ -35,11 +36,11 @@ libpcre2:
 
 
 
-QBASH_vocab_lister.exe: vocab_lister/QBASH_vocab_lister.o shared/utility_nodeps.o shared/unicode.o shared/QBASHER_common_definitions.h
+QBASH_vocab_lister.exe: vocab_lister/QBASH_vocab_lister.o shared/utility_nodeps.o shared/unicode.o 
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
-TFdistribution_from_TSV.exe : TFdistribution_from_TSV/TFdistribution_from_TSV.o utils/dahash.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o shared/QBASHER_common_definitions.h
+TFdistribution_from_TSV.exe : TFdistribution_from_TSV/TFdistribution_from_TSV.o utils/dahash.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o 
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 QBASHQ.exe: qbashq/QBASHQ.o libQBASHQ-LIB.a libpcre2
@@ -94,3 +95,4 @@ git:
 	# ...  now run git commit -m \"<commit message>\" and git push"
 
 
+-include */*.d
