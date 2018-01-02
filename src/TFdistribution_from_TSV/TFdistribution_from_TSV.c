@@ -131,7 +131,7 @@ static u_char *process_repetitions(u_ll line_count, u_char *line,
 
   // Now sort the words into order using qsort and the permute array
   for (w = 0; w < wds_found; w++) permute[w] = w;
-#ifdef WIN64
+#if defined(WIN64) || defined(__APPLE__)
   qsort(permute, (size_t)wds_found, sizeof(int), wdcmp);
 #else
   qsort(permute, (size_t)wds_found, sizeof(int), (__compar_fn_t)wdcmp);
