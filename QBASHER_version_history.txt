@@ -1,0 +1,1974 @@
+QBASHER version history
+-----------------------
+Sorry, didn't start recording until version 1.1.11
+
+*** V1.1.11  developer1 11 Dec 2014 ***
+QBASHI - Record QBASHER_VERSION in the .if file header
+	   - NOTE: various error conditions may cause this to take an error exit.
+QBASHQ - When debugging or in batch mode, report on the version number of both QBASHQ and the index
+	   - When -display_col is zero, return the full record from the .forward file (all columns)
+	   - Add a -duplicate_handling option to allow duplicate
+	     elimination to be switched off or varied (eventually)
+	   - Make -max_candidates default to IUNDEF (undefined
+	   integer). If not explicitly set, set it to max_to_show.
+	   - Avoid SEGFAULT (missing argument in printf) when an index file can't be accessed.
+	   - Start to implement policy of error_exit for any error detectable at start-up and try to warn and recover in every other case
+		 - add checks for empty and invalid options in assign_one_arg()
+		 - add exit_on_error param to assign_one_arg() - call
+		   with TRUE when parsing command line and FALSE when
+		   parsing options in a query batch.
+		 - check that calls to error_exit() and exit() conform to the policy
+			- arg_parser.cpp
+			- relaxtion.cpp
+			- QBASH_lib.cpp
+			- saat.cpp
+			- QBASHQ.cpp
+			(Done.  Note that error exits are still taken if system thread calls fail.)
+	  - DLL:  Split QBASHQ into a DLL and a calling main.   Had to change to build with a dynamically linked CRT (C Runtime Library) otherwise 
+	          two copies of the static CRT are linked in and the file descriptor tables for main and DLL don't correspond.  E.g. you can't 
+			  pass FILE * arguments to DLL functions and stdout is not the same in the two places.
+	  - Reorganized the source to facilitate sticking in TFS.
+
+*** V1.1.12  developer1 22 Dec 2014 ***
+
+QBASHQ - Restructure the use of query_output and query_stream file descriptors to allow static linking (see DLL comment in previous version.  
+QBASHQ-LIB is now built as a static .lib.  Tests pass.
+
+*** V1.1.13  developer1 24 Dec 2014 ***
+
+QBASHQ - Remove almost all of the FILE * arguments to functions, to simplify the API. 
+			- All test functions and exit messages go to stderr
+			- Normally expected output goes to
+			qoenv->query_output, passed across by passing
+			qoenv, not the member.
+
+*** V1.1.14  developer1 07 Jan 2015 ***
+
+QBASHQ - Fixed segfault in possibly_record_candidate check of repeated
+query words
+
+*** V1.2.0  developer1 23 Jan 2015 ***
+
+a. Add minval and maxval members to the arg_t struct and add code in assign_one_arg() to force argument values into
+the minval .. maxval range.  (Can be turned off if assign_one_arg() is called with enforce_limits == FALSE)
+b. Set a high default for timeout_kops to prevent excessively excessive runtimes.
+c. Increase MAX_TRIGGER_LEN from 200 to 4000. I thought I'd already done this
+d. Define MAX_RESULT_LEN as 2000 and avoid result strings longer than this.
+e. QBASHI: Write file lengths of .forward, .dt, .vocab into the .if header.
+f. QBASHI: Write the length of the .if into the last 8 bytes of the .if file.
+g. QBASHQ: Check the file lengths and exit if there's a problem.
+h. QBASHQ: When using the file_query_stream option, open the file with "rb" flags so that ctrl-Z isn't treated as EOF
+i. QBASHQ: Correctly handle the empty phrase case "" - It was causing a segfault
+j. QBASHQ: Improvements to normalize_delimiters() to ensure unbalanced quotes or brackets don't get through - It was causing a segfault
+k. QBASHQ: saat_setup_disjunction() and saat_setup_phrase() to avoid crash if unbalanced quotes or brackets do get there.
+
+---- TF label "1.2.0 - with support for shards" src /recursive
+
+
+*** V1.2.1  developer1 23 Jan 2015 ***
+
+QBASHQ: Very widespread changes to remove support for shards:
+	- Running a huge set of queries with 1.2.0 resulted in code 1450 errors from the CreateEvent call associated with
+	  firing up the shard threads, after about 16.7 million queries
+	- it complicated the code significantly (and was only used for AS demo, now no longer needed)
+	- Mark Atherton argued that aggregation should be done at a higher level
+	- Found a bug when copying results in handle_one_query() (incrementing i before copying)
+
+Unfortunately, dropping support for shards has massive implications for the test suite, which still haven't been fully worked through.
+Running 'mississippi state university' with relaxation_level=1 no longer finds colorado state university.  That needs to be debugged.
+
+Unfortunately the new version avoided the code 1450 errors but the program failed at about the same 
+point (34 bits worth of queries.  Is that significant?)  This time with WAIT_FAILED error cod
+
+e 6 (Invalid Handle).
+It turned out that the fault was not in the library but in the calling program - the event handles created one per 
+thread were never closed.  Fixing that allowed QBASHQ to run 92 million queries against both a lyrics and a paper title
+index and terminate normally.
+
+Milestone: 92020046 queries run; Total elapsed time: Macro 5543.3 sec; Micro 49493.3 sec. Pagefile usage 17796KB -- 16600.3 QPS
+
+--- Academic -----
+Inputs processed: 92020046
+Thread timeout was set at: 10000 kilo-cost-units
+  Query timeout count: 0 (Queries for which at least one thread timed out.)
+Average elapsed msec per query: 1
+Maximum elapsed msec per query: 1206  (/kfufhguxxxhcz#!+?@/;:_'(2))
+
+Elapsed time percentiles:
+   50th -   0
+   90th -   1
+   95th -   1
+   99th -   3
+ 99.9th -  11
+
+ Lyrics (classificationPaper)
+Milestone: 92020046 queries run; Total elapsed time: Macro 5094.5 sec; Micro 46130.3 sec. Pagefile usage 11904KB -- 18062.5 QPS
+
+
+Inputs processed: 92020046
+Thread timeout was set at: 10000 kilo-cost-units
+  Query timeout count: 0 (Queries for which at least one thread timed out.)
+Average elapsed msec per query: 1
+Maximum elapsed msec per query: 743  (in /usb)
+
+Elapsed time percentiles:
+   50th -   0
+   90th -   1
+   95th -   1
+   99th -   2
+ 99.9th -   4
+
+--- All tests pass (after modifications necessitated by merging the two shards of the AS_500k index ***
+
+*** V1.2.2  developer1 29 Jan 2015 ***
+
+QBASHQ:  Substantial rewrite to handle all error conditions in the API library by cleaning up and sending an error code 
+back to the caller.  All output should also be suppressed unless debug mode is activated.
+	- During testing of the changes I noticed that handle_one_query() was incorrectly making use of the global query 
+	  environment rather than the local one.  Now fixed.
+
+*** V1.2.3  developer1 30 Jan 2015 ***
+QBASHQ:  Previous version crashed after encountering an empty phrase within a disjunction after 281 million queries out of a batch
+of 1.3 billion.   The low-level routine passed back an error code but the higher levels didn't handle it properly.  Fixed that and
+also added extra code to remove empty phrases and disjunctions from the query.  (Belt + Braces)
+
+To make it easier to debug future errors of this type, an additional Milestone: line is output which reports how many bytes 
+have been read from the input file. If that value is K then you can use  'tail -c +K | head -20000' to grab 20000 lines 
+around the point of the error.
+
+Milestone: 13083000 queries run; Total elapsed time 728 sec.  Pagefile usage 11372KB
+Milestone: Input file offset (approximate): 267277919
+
+
+
+*** V1.2.3  developer1 30 Jan 2015 ***
+QBASHQ:  Promote the input file offset from off_t to long long, since it seems VS doesn't make offsets 64-bit even when 
+the application is 64-bit.
+
+Still to address:  the use of non-reentrant versions of strtol, strtod etc.
+
+*** v1.2.4 developer1 03 Feb 2015 ***
+
+QBASHI:  Problems indexing classificationPaper collection on redsar02.  Same executable on same data works fine
+         on my laptop but generates various errors relating to writing files when run on redsar.  Redsar was also taking
+		 a huge amount of time during the indexing pass where it is actually indexing the data.
+		   
+		 - Write problems turned out to be something to do with the fact that the QBASHER/indexes/classificationPaper
+		   directory was created by another user.  It didn't even work for me to delete all the files which QBASHI writes. I
+		   had to create .doctable, .vocab and .if files using vi and then QBASHI.exe worked fine.  I guess I must have
+		   the wrong options to CreateFile()
+
+		- Slowness:  During indexing Task Manager showed QBASHI.exe to be using only a tiny percentage of CPU, hence I
+		  needed to speed up I/O.  I used the buffered_write() function on the .doctable file which is used on .if and
+		  .vocab.  It made a massive difference:  592 seconds for the slow pass dropped to 29 seconds! 
+		  (Incidentally I reduced the size of the HUGE buffer from 10MB to 1MB.  That caused no slow-down at all.)
+
+*** v1.2.5 developer1 05 Feb 2015 ***
+QBASHI:  Arrange to always print the QBASHER version number, via print_version_and_options() or print_usage()
+QBASHQ:  Add a print_qbasher_version() function to the API, and arrange for the main program to print QBASHER version 
+		 and index format in the appropriate circumstances.
+QBASHI:  Change the code which allocates the initial size of the hash table to actually make the size vary:
+			- for linear scan, based on the max_docs parameter
+			- for reordered scan, based on the actual number of docs encountered in the first pass.
+         Prior to running the very last phase (writing .vocab and .if) which was impossibly slow when indexing the
+		 concatenation of all 6 AS shards on redsar, provide detailed reports of memory usage so that we don't have
+		 to wait ages until indexing finishes to find out why things were slow.
+
+*** v1.2.6 developer1 05 Feb 2015 ***
+QBASHI:	 allocate_hashtable_and_heap() - reduce the thresholds for increasing the number of hashbits to 
+		 reduce likelihood of doubling.
+		 - When printing memory use stats, record the time elapsed since the last such summary (so we can 
+		   see when things start to bog down.)
+
+*** v1.2.7 developer1 05 Feb 2015 ***
+QBASHI:  Arrange to fflush(stdout) in a couple of key places so that a person monitoring the logfile of a big
+		 indexing run can quickly confirm that the right indexer and options have been chosen and things are happening.
+		 
+*** v1.2.8 developer1 14 Feb 2015 ***
+QBASHQ:  Add a new module, classification.[ch], and two new options classifier_mode and classifier_threshold to
+         as a first step toward implementing a classifier capability.
+		 
+*** v1.2.9 developer1 15 Feb 2015 ***
+QBASHQ: Significant refinements to the classification mode.  Now the system returns the highest scoring result
+	    if the classification decision is Yes and no results if the decision is No.
+		Still to consider:
+			- Biasing toward title matches for lyrics -- best done by incorporating in the static score (I believe that may be
+			  already done.)
+			- Designing and implementing rules for saying No if the results are ambiguous.
+			- Early termination.  To ensure we find an exact match if present, we need to consider very many 
+			  candidates.  That slows things down.  Perhaps saat_relaxed_and() can stop early if it finds 
+			  a full exact match.  (That one will rank first because it must have the highest static score of
+			  all the exact matches.)
+			- Relaxation mode.   How much relaxation should we dial up?  Should we do multiple runs?
+			- The code for finding a matching span in the classifier() function looks for only one span which
+			  will underestimate the true score when query words are repeated in the doc.  E.g. if Q = {love me do}
+			  and D = {love, love me do} the code will find the span from 0..3 not the one from 1..3
+
+
+*** v1.2.10 developer1 16 Feb 2015 ***
+QBASHQ: Early termination: Overhaul the classification mechanism to try to reduce the response time for queries that actually 
+        match.  We now calculate a classification score in possibly_record_candidate().  If possibly_record_candidate()
+		finds an exact lexical match, then it returns a code of 2, and that is treated by saat_and() and saat_relaxed_and()
+		as a signal to terminate.  The job to be done by the classifier is thus just to sort by the recorded scores.
+
+		Discovery:  There are songs called 'Google', 'Facebook', and 'eBay'!
+
+		Added three new options:
+			-classifier_min_words -  Just return No if the query has fewer than the specified number of words
+			-classifier_max_words -  Just return No if the query has more than the specified number of words
+			-classifier_lyrics_mode - Doesn't do anything yet, but will preprocess queries containing, e.g. "lyrics of X" and bias the 
+			                          classification decision toward Yes by e.g. halving the threshold.
+
+		Suggested options when running in classifier mode:
+
+			-classifier_mode=1  // No other non-zero values are yet supportedq
+			-classifier_threshold=0.75  // This is the default - it seems reasonable for the moment
+			-max_candidates=1000 // Increase chances that an exact match will be found if there is one
+			-max_to_show=1  // Only going to show one "answer"
+
+			plus new options as required.  In Academic Paper triggering it probably makes sense to set classifier_min_words to 
+			3 or more since the shorter matches are very dodgy even if exact.  Setting classifier_max_words to say 16 probably 
+			avoids wasted effort on queries which are excessively long.  Note that queries are truncated to MAX_WDS_IN_QUERY 
+			(32) anyway, but this option avoids considering them at all.  Values above MAX_WDS_IN_QUERY actually have no effect.
+
+*** v1.2.11 developer1 18 Feb 2015 ***
+QBASHI:  Added -max_line_prefix= option to allow indexing of prefixes of the first word on a line.  They are indexed with a
+		 a leading '>' If the option is given then '>' is removed from the other_token_breakers set.  To query for a line 
+		 prefix just search for the prefix you want with a prepended '>'.   The number of postings for each of the line_prefix 
+		 terms is limited to 100 by default but this can be altered using -max_line_prefix_postings=
+QBASHQ:  No change required, because it reads the other_token_breakers string from the .if header
+
+		 Example usage:
+
+		 blah/QBASHI.exe index_dir=blah -max_line_prefix=16 -max_line_prefix_postings=100 > index.log
+		 blah/QBASHQ.exe index_dir=blah -pq=">bail"
+
+		 763M    QBASH/indexes/Top100M/QBASH.doctable
+		 2.7G    QBASH/indexes/Top100M/QBASH.forward
+		 1.2G    QBASH/indexes/Top100M/QBASH.if  (was 996M)
+		 568M    QBASH/indexes/Top100M/QBASH.vocab  (was 172M)
+
+*** v1.2.12 developer1 19 Feb 2015 ***
+QBASHQ:  Adding the ability to recognize the lyrics vertical intent in a query, when -classifier_vertical=lyrics is given.
+		1. added new modules shared/utility_nodeps.cpp and .h with a few QBASHER-independent string functions
+		2. added () function to classification.cpp to recognize the vertical intent and strip intent words out of query
+		3. added vertical_intent_detected flag to qex  
+		4. if the vertical_intent_detected flag is set, 1.0 is added to scores.
+
+
+*** v1.2.13 developer1 23 Feb 2015 ***
+QBASHQ:  1. Slight speedup of lookup_word() by calling strcmp (with casting) rather than an inbetween function to do the cast.
+         2. Moved a bunch of functions from qbashq-lib to shared/utility_nodeps
+		 3. Implemented classifier_mode=2.  
+			a. Implemented a modified dave formula using idf sums rather than counts
+			b. When classifier_mode == 2, the QBASH.global_idfs file is memory mapped.  If it doesn't exist this is treated as an error
+			c. A new function get_global_idf() uses binary search within the global_idfs mapping to retrieve the idf value
+			d. If not found, a default score is returned.  Currently that's set to three, because I don't think that a term which is non-existent 
+			   on the web should necessarily get a huge IDF score.
+Build_globalidf_from_TSV - A new application which builds the .global_idfs file (sorted in the order expected by QBASHQ) from a TSV file
+            in which column 1 has the word and the global DF is in a column specified on the command line.
+
+
+*** v1.2.14 developer1 23 Feb 2015 ***
+QBASHQ:  1. Add an auto_line_prefix option to automatically prepend the '>' when the input query contains no space.  This option is ignored
+		    if the index has not been built with the -max_line_prefix option set nono-zero.   Currently that is detected by looking for a double
+			question-mark in the other_token_breakers string.  To make it more explicit in the .if header would preferably require an index
+			format change but, at the moment this is only a prototype demo, so a little hack should be OK.
+
+*** v1.2.15 developer1 23 Feb 2015 ***
+QBASHQ:  1. Fixing bug reported by Developer2:  The 'vertical intent detected' message was printed regardless of the outcome of apply_lyrics_specific_rules()
+		 2. Changing vertical intent detected message to include the original query as well as the modified one. (As requested by Developer2)
+		 3. Print "No explicit vertical intent signal" if the result of apply_lyrics_specific_rules() is zero
+
+*** v1.2.16 developer1 24 Feb 2015 ***
+ QBASHQ: 1. implemented bag_similarity() and used it in a prototype ambiguous answer detector when running as a classifier.  Needs more work.
+
+*** v1.2.17 developer1 04 Mar 2015 ***
+ QBASHQ: 1. Reverting to building QBASHQ as a front-end EXE and a DLL since the Object Store will use a DLL
+		 2. Added new QBASHsharp project - a C# main program to call the DLL
+		 3. Trivial changes to qbashq-lib made during integration of QBASHsharp and the API.  E.g. adding a few more error message 
+		    definitions and returning error codes from finalize_query_processing_environment() instead of writing to stderr
+
+*** v1.2.18 developer1 04 Mar 2015 ***
+ QBASHQ: 1. Altered the substitute() function to allow a mode where the pattern to be replaced is treated as though it started 
+			and ended with \b
+		 2. Modified apply_lyrics_specific_rules() to change the rules so that Developer2's test script 'qbash_modifyLyricsQueries_check.pl'
+		    passes.
+		 3. Modified Developer2's script to expect the stripping out of 'lyrics by', so that 'roar lyrics by katy perry' becomes 'roar katy perry'
+			
+*** v1.2.19 developer1 09 Mar 2015 ***
+  QBASHQ: A few minor tweaks to facilitate calling the API from C-sharp.  In particular adding an extract_result_at_rank() function. 
+			- The C-Sharp front end is in TFS as QBASHQsharp
+
+*** v1.2.20 developer1 10 Mar 2015 ***
+ QBASHQ:  extract_result_at_rank() needs to return the length of the string too, cause C# doesn't handle null-termination.
+
+ *** v1.2.21 developer1 20 Mar 2015 ***  -- DLL changes to support Object Store OneBox integration
+ QBASHQ:  1. QBASHQ_lib.* - Insert some functions Native....() which will be the ones called from
+          ObjectStore.  In ObjectStore, we will be given a list of filenames from an unpacked tarfile: 
+			the four index files and a config file.
+		  2. Added an object_store_files= option to test the processing of such a list of files. 
+		  3. Add an additional option file_config to allow specification of options via a config file.  
+		  4. New function in arg_parser.cpp - assign_args_from_config(), called from finalize_query_processing_environment() 
+		     before it takes the other actions.
+
+*** v1.2.22 developer1 17 April 2015 ***  -- Fixing problem with matching partials
+QBASHI:   1. Fixing calculate_signatures_from_first_letters() to do ASCII case-folding (really must tackle the UTF-8 project 
+             soon!) and to use the token-break set rather than just space.  The ability to match partials hadn't been maintained
+			 since RevIDX came on the scene and indexer and query processor had drifted out of sync resulting in missed answers.
+		  2. Fix up the internal test to match new semantics
+		  3. Add a new perl test qbash_bloombits_check.pl
+
+*** v1.2.23 developer1 20 April 2015 ***  -- Fixing slow combination of classifier_mode and relaxation_level
+QBASHQ:   1. relaxation.cpp:saat_relaxed_and() -  if classifier_mode > 0 don't allow the relaxation level to cause consideration
+			 of candidates which can't possibly reach the classification threshold.  This change more-or-less quadrupled the QPS
+			 rate on a test set of queries.
+QBASHI/Q: 2. process_trigger() -- The trigger is defined as all the characters from the beginning of the line to the first tab.  
+			 I found that when there was a control character in the trigger, the control character was indexed as a word.  So
+			 "control ^M character" would be indexed as 3 words.  HOWEVER, in QBASHQ the ^M was treated as a line terminator, and
+			 the word count for the above example string was 1.  This led to a SEGFAULT when processed by extract_text_features()
+			 or classification_score().   Now both QBASHQ and QBASHI treat the ctrl-M as a token-break character and give the 
+			 length of 2 for the example string.
+	
+*** v1.2.24 developer1 23 April 2015 ***  -- 		
+QBASHQ:   1. Found that classifier_mode=1 produced fewer matches than special_matching=2 which should not be the case.  Turned
+			 out to be because of query normalisation in one case but not the other.  Arranged to remove operators and normalize
+			 the query when classifier_mode > 0.
+		  2. Implement classifier_modes 3 (Jaccard similarity) and 4 (IDF weighted Jaccard)
+
+*** v1.2.25 developer1 24 April 2015 ***  -- 		
+QBASHQ:   1. Needed to do more operator stripping in the special_matching modes because queries in square brackets are
+             otherwise treated as disjunctions leading to answers which are not exact.
+		  2. Timeout_kops now defaults to zero (unlimited) to avoid occasional mysteries
+		  3. Fix major error in calculation of swaps in classification_score()  *** STILL NEEDS WORK ***
+		  4. Extend classifier() function to properly handle partial matches thrown up when relaxation_level is non-zero
+
++++ Index Format Change (version 1.3) +++ -- changed widths of fields in doctable entries to allow 42 bit offsets into .forward 
+*** v1.3.0 developer1 29 April 2015 ***  -- 		
+Common definitions:  1. Change the various DTE_ defines to reduce WDCNT, SCORE and BLOOM while increasing OFFSET
+					 2. Introduce definitions of WDPOS_BITS and WDPOS_MASK because outside the doctable WDPOS quantities
+					    remain at 8 bits.  ALso define DTE_WDCNT_MAX  to be 31
+QBASHQ:				 1. A few changes to deal with the fact that when the Doctable wdcnt says 31 it might actually be a 
+						larger value.
+					 2. In classification_score(), if the doctable says length == 31, compute the actual word count.
+						
+*** v1.3.1 developer1 30 April 2015 ***  -- Improve precision of timing
+QBASHQ/I:  Replace all calls to clock() with calls to the QueryPerformance system, as recommended in MSDN doco:
+			https://msdn.microsoft.com/en-us/library/windows/desktop/dn553408(v=vs.85).aspx
+			QueryPerformanceCounter() and QueryPerformanceFrequency() are the basis of the function msec_elapsed_since()
+			now defined in utility_nodeps.cpp.
+
+			The reason for this work is that maximum and 99th percentile response times for a large batch of queries
+			against a small index were always reported as 15 or 16 msec, while 95% of queries were run in less than
+			1 msec.  Investigation revealed that which queries were slow was totally random.  My guess is that the 
+			timer used by clock() is only updated about 67 times per second. Which means that all queries appear to
+			run in 0 msec, except the ones which occur around a clock update.
+
+			The QPC system seems to overcome this problem.
+
++++ Index Format Change (version 1.4) +++ -- changed the definition of skipblock headers to allow up to 100 billion docs
+*** v1.4.0 developer1 30 April 2015 ***  
+Common definitions:  1. Move the typedef for docnum_t to here.
+					 2. No longer store lastwdnum in skipblock headers.  Remove the sb_get_lastwdnum(x) macro
+					 3. Adjust the bitfield widths to 37 (docnum), 12 (postings in run) + 15 (bytes in run)
+QBASHI:				 1. Try to consistently use docnum_t for document numbers
+QBASHQ:				 1. Remove use of sb_get_lastwdnum(x)
+
+*** v1.4.1 developer1 01 May 2015 ***  
+QBASHI:	 1. Progress reports written in the log, wrote the docnumber in %d rather than %I64d format.  That results in 
+			negative numbers and wrap-around for numbers larger than 2**31.
+		 2. Trying to explain why the writing of .vocab and .if on redsar is incredibly slow.  (About 3 hours to write 10GB, that's only 
+		    about 1 MB/sec. Redsar doesn't seem to be paging -  TaskManager only reports 66% memory usage.)
+			a. Checked (via printfs on laptop) that the megabyte buffering seemed to be doing the right thing. 
+			b. Removed all the sharing permissions on CreateFile calls - they relate to other processes simultaneously
+			   accessing the open file, rather than the permissions the file will have when closed.
+		 3. Arranged to fflush(stdout) at critical points in the indexing process.
+
+
+*** v1.4.2 developer1 05 May 2015 ***  
+QBASHQ:	 1. Fix up a couple of issues in error handling, particularly when index version incompatibility is detected.  
+			(That issue was causing a segfault.)
+
+*** v1.4.3 developer1 05 May 2015 ***  
+QBASHI:	 1. Fixing recently introduced bug in recording word counts in doctable when doc is longer than 32 words.
+QBASHQ:  2. Suppressing annoying CPU and statistics logging when warm_indexes is TRUE.
+
+*** v1.4.4 developer1 11 May 2015 ***  
+QBASHQ:	 1. Arrange to support -max_length_diff=100 as a means of switching on a dynamic setting of the length difference
+			limit.  (Limit = (|Q| * |Q|) / (|Q| + 2) + R, where R is the relaxation level)
+		 2. Timeouts in classifier_modes weren't working properly because the op counter was not being updated when 
+		    classification_score was called.  Fixed that
+		 3. Added extra counters for term dictionary lookups, rank-only term evaluations, and Bloom filter checks.
+
+*** v1.4.5 developer1 14 May 2015 ***  
+Utility_nodeps:  Restoring the FILE_SHARE_READ attribute to the CreateFile() call within open_file_ro(), withdrawn in 1.4.1.
+		    It didn't make much difference to runtime and it's absence prevents more than one QBASHQ from querying the same index.
+
+*** v1.4.6 developer1 17 May 2015 ***   Gearing up to do some performance monitoring
+QBASHI:		1. Added two Xperimental options x-hashbits, x-hashprobe to allow control of performance measurement experiments
+			2. Improved the reporting of elapsed times
+				- Added extra timing points (time to write the .if file, total scanning time for sorted-scan)
+
+*** v1.4.7 developer1 20 May 2015 ***   Capacity and memory compactness improvements
+QBASHI:		1. Sorted indexing didn't work when there are more than 2 billion documents because of use of 
+	           ints in various places.
+			2. Changed the vocabulary entries in the hash table to use 5-byte composite DOH references rather than 
+			   8-byte pointers.
+			3. Upgraded a whole lot of variables in process_records_in_score_order() to u_ll (unsigned long long).
+			   To date, this function failed for more than 2^31 docs
+QBASHQ:		4. When checking the text of a candidate for matches against partial words in the query, the code now
+			   uses the same test as elsewhere rather than just breaking on spaces.  The incompatibility led to 
+			   a difference in behaviour observed by Developer2 for the query {an ontology based query system for digital libraries}
+			   when run with and without auto_partials.
+
+*** v1.4.8 developer1 20 May 2015 ***  Found what "Code Analysis" does in VS and used it to tidy up a few small issues.
+QBASHQ:      1. While doing this, noticed that the number of parallel query streams was limited in a second place
+				to 12 (arrays are statically allocated).  Increased that limit to 100 and made the limit in arg_parser.c match.
+
+*** v1.4.9 developer1 21 May 2015 ***  Experimenting with Virtual Memory Large Pages in QBASHI
+			1. Add x_use_large_pages option to allow turning on and off.
+			2. Add Privileges() function to set the lock memory privilege and to handle failure.
+			3. Add lp_malloc() and lp_free() functions which switch between large pages and ordinary 
+				depending upon x_use_large_pages and call them for allocating DOH blocks.
+
+				*** UNFORTUNATELY: Can't use large pages to map the forward file.
+				"SEC_LARGE_PAGES: This attribute is not supported for file mapping objects that are backed by executable image 
+				files or data files""
+
+*** v1.4.10 developer1 27 May 2015 ***  Linked list chunking in QBASHI
+			1. Change the DOH definitions in linked_list.cpp to store bytes in each block rather than linked_list_element counts.
+			2. Implement -x_chunk_func=<int> to specify the type and parameters of the chunking function to use.
+				0 means unchunked (or fixed size 1 chunks)
+				1 - 100 means fixed size chunks of that size
+				101 means Fibonacci with runs of length 1
+				102 means Fibonacci with runs of length Fib(k)
+			3. In QBASHI.cpp calculate_k_table() is called with the x_chunk_func value to set up tables to control the 
+			   chunking.
+			4. doh_allocate() modified to allow allocation of size based on K the current chunk size
+		    5. Append_posting() modified to calculate value of K from the count of postings for this term
+			6. write_inverted_file() modified to work with chunked lists.
+
+*** v1.4.11 developer1 28 May 2015 ***  Linked list chunking in QBASHI (tidy up)
+			1. QBASHI.cpp:allocate_hashtable_and_heap() -  take account that allocation sizes are now entries rather than bytes.  Too few 
+			   blocks were being allocated in some circ.s
+			2. Add two more entries to the DOH header to count doh requests and total of doh request sizes
+			3. Patch up size reporting in the log to give a full picture in a chunking environment
+			4. Unfortunately, improvements in logging mean changes in format of logging.
+
+*** v1.4.12 developer1 31 May 2015 ***  Fix a capacity typo in QBASHI 
+			1. QBASHI.cpp:calculate_k_table only iterated to 100 million not 100 billion.  On an artificial collection with 
+			   500 million postings for one term, QBASHI blew up.  Fixed the typo.
+		    2. linked_list.h: increased the max number of entries in the k table to 4096 from 512.
+
+*** v1.4.13 developer1 03 June 2015 ***  Implement variable skip block lengths.  Doesn't require any change in QBASHQ
+			1. QBASHI: Allow -sb_run_length to take a zero length and use it to request dynamic setting of 
+			   skip block run lengths to the square root of the list length (up to the maximum of 4096)
+			2. Implement this with a very small change to the skip block section in write_inverted_file()
+		 
+*** v1.4.14 developer1 03 June 2015 ***  Adding an experimental ability to list the response times for each query in a batch
+			1. QBASHQ: add -x_show_qtimes option.  It forces query_streams=1 and outputs response times in the form:
+					QTIME: <query as processed> TAB <elapsed msec>
+
+*** v1.4.15 developer1 05 June 2015 ***  Changing defaults to reflect last week of experiments
+	QBASHI: 1. Default to x_chunk_func=102:  Significantly cuts memory requirements during indexing and also time to index
+			2. Default to dynamic skip blocks and trigger of 500
+
+*** v1.4.16 developer1 06 June 2015 ***  Experiment with avoiding mmapping .forward when records are not to be sorted.
+	QBASHI: 1. -x_fileorder_use_mmap option.
+
+*** v1.4.17 developer1 08 June 2015 ***  One step further: A buffer-filling thread.
+	QBASHI: 1. Added a module input_buffer_management.cpp/h to control forward file input from separate thread.
+			2. Modified get_line() and process_records_in_file_order() to interact with the input_buffer_management 
+			   functions.
+			3. Needed to modify the CreateFile() call (turn off buffering) to get reasonable performance.   It's 
+			   still no better than the old version :-(
+
+*** v1.4.18 developer1 10 June 2015 ***  Trying to overcome a drastic speed drop associated with IDF-based classifier_modes
+	QBASHQ: 1. Dynamic setting of max_length_diff.  If a max_length_diff parameter greater than 100 is specified (up to 999), then 
+		       the value is interpreted as length_cutoff * 100 + addon.  E.g. 402 means wordmax = 4 and addon = 2.  For queries up 
+			   to and including length_cutoff in length the max_length_diff will be dynamically set to:
+
+				|Q|^2 / (|Q| + 2) + relaxation_level + addon.   
+
+				In the dynamic setting mode, no max_length_diff restriction is applied for queries longer than length_cutoff
+
+		// In classifier_modes 2 and 4, the classification score is based on sums of IDF values.  When the queries are short
+		// and the records are long, QPS rates and latencies deteriorate, sometimes very dramatically (factor of 100 in QPS)
+		// due to the need to look up the IDF for every term in every candidate.  But most of this computation is wasted.
+		// Setting max_length_diff to 401 means that the actual length diff maximum is set dynamically for queries up to 4
+		// words in length.  Note that this change will not occur if an explicit max_length_diff value has been specified.
+
+*** v1.4.19 developer1 18 June 2015 ***  QBASHI changes to improve performance reporting.
+			1. linked_list.cpp:doh_print_usage_report() -  Print total number of allocate requests, sum of request sizes and average request size.
+			2. arrange to report page fault counts for each indexing phase.
+			3. Be more thorough in logging the indexing options in force for the current run.
+			4. Add another experimental option -x_minimize_io  to suppress the writing of the index files.
+
+*** v1.4.20 developer1 19 June 2015 ***  QBASHQ changes to support classifier_mode=magic_songs
+			1. Add small function to classifier.cpp to make string mods.  Tested with printfs
+
+*** v1.4.21 developer1 22 June 2015 ***  QBASHI changes to support storing short linked_lists within the hash table
+			1. Change VOCAB_ENTRY_SIZE from 16 to 18
+			2. New option and variable:  x_2postings_in_vocab
+			3. Make x_2postings_in_vocab-dependent changes in process_a_word() and write_inverted_file() to store
+			   postings lists of lengths 1 and 2 in the hashtable entries.
+			4. Make changes to calculate_k_table to implement power, sub-power and super-power functions.
+				200k - sub-power with k specified by the last digit
+				300k - power with k specified by the last digit
+				400k - super-power with k specified by the last digit
+
+*** v1.4.22 developer1 23 June 2015 ***  
+	QBASHQ:  Fix fname_query_batch in QBASHQ.cpp error message.
+	QBASHI:	 1. move the statement which sets pfc_list_scan_start to AFTER the allocation of the permute()
+		     2. When x_minimize_io=true, don't even write stuff into the buffer.  buffered_write() just returns straight away.
+			
+*** v1.4.23 developer1 24 June 2015 ***  
+    QBASHI:	 1. Implement two functions to estimate the doccount for a collection based on sampling, one when the .forward
+				is mmapped but not sorted by weight, and the other for when mmap is not used.  The code has been tested on
+				a range of collections from 2 docs to 89 million and produced estimates within 3 or 4%, usually much closer 
+				(except for the 2 doc collection when the error is very small in absolute terms.)
+			2. Use the estimate in allocating a hashtable of suitable size.
+			3. Fix a bug which caused an infinite loop when mmapping but not sorting and the last record in the file was 
+			   empty.   That happened for the 2-doc collection (which actually has 3) -- It would be much more concerning
+			   if this happened in a much longer file.
+
+*** v1.4.24 developer1 24 June 2015 ***  Starting on using compression in linked list chunks.
+	QBASHI:	  1. Replacing ve_pack455() and ve_unpack455() with ve_pack4552() and ve_unpack4552() to allow storing a 
+				chunk count in the vocabulary hashtable.
+				
+*** v1.4.25 developer1 28 June 2015 ***  Fixing an indexer bug associated with zero scores in records.
+				The problem is visible in the following tiny collection:
+
+				The only record with a non-zero score   10000
+				scotch vodka rum cognac brandy 0
+				cougar duck elephant    0
+
+				Regardless of the order in which records are indexed, QBASHI reports 16 postings from 1 docs.  Queries 
+				{scotch} and {elephant} return "The only record ..." with a score of zero!  Query {record} returns 
+				"The only record ..." with a non-zero score.
+
+				In both modes we should index every record.  If a record's score is zero or negative, we just count
+				it as zero, or one (if we are taking logs, as we do when sorting.)
+
+				In the case of sorting, we know the highest score, so we can normalize all scores to lie between 
+				0 and 1.
+
+				In the case of non-sorting we don't know how to normalize scores because we don't know what the maximum
+				is.  Up until now we've just divided by a very large number.   A better assumption may be that the 
+				records have been pre-sorted with the highest score first.   Let's  assume that's the case and divide
+				by the score of the first record (or 1 if the score of the first record is zero or negative.)
+
+	QBASHI:	    1. Remove all the code and comments relating to ctrl-G.  That was autosuggest-specific, not needed any
+				   more, and capable of causing mysteries elsewhere
+				2. Remove hard-wired score thresholds (which were incorrectly coded anyway and which caused the problem
+				   which these changes are addressing.)  Now, a valid record is indexed iff its score is equal to or greater 
+				   than the score_treshold (0.0 by default but settable by command line argument)
+				3. The command line argument is now score_threshold rather than freq_threshold
+				4. Scores and score thresholds may now be floating point numbers.
+				5. When indexing in file order, scores are now normalized relative to the score of the first record,
+				   unless (A) - a max_score value has been supplied via the command line, or (B) the score of the first
+				   record is zero or negative, in which case scores will be divided by 1
+				6. Internally, variables which used to be called 'freq' something are now called 'score' something.
+				7. Change file_order indexing to use log_ratio quantization the same as score-sorted indexing for greater
+				   compatibility between the modes.  When indexing a file which has been pre-sorted in descending score
+				   order, the scores recorded should be the same in either indexing mode. 
+
+				   *** Problem collection quoted above produces right results in both indexing modes.
+				   *** Tests passes after reindexing
+
+*** v1.4.26 developer1 01 July 2015 ***  Step 2 in using compression in linked list chunks.
+	QBASHI:	1. Implemented ve_get_chunk_count(), ve_store_chunk_count(), ve_increment_count(), and ve_increment_chunk_count() macros
+			2. test_ve_pup() - add tests of all the macros, new and old.
+			3. Implement a ve_store455x() function which leaves the chunk_count as it was.
+			4. Change the process_a_word(), append_posting(), and write_inverted_file() functions to use the appropriate
+				ve_store*() and ve_get*() functions and to record the chunk_count in the hash table entries, switching
+				between the 466 and 4552/455x as appropriate.
+			5. Increase the size of the NEXT pointers field in list chunks to 7 bytes.  When NEXT actually serves as a 
+				pointer then the first 5 bytes are the composite pointer to the next chunk.  While working on the chunk
+				currently at the end of the list, all 7 bytes are used, packed 37 bits for the last_docnum written
+				and 19 bits for the number of bytes used in the chunk.
+			6. Change doh_allocate() to initialise the allocated chunk to be all ones.
+			7. In the chunks write wordpos before docnum.  Since no wordpos is allowed to be all ones, this will
+			   make for a simple test of when we've come to the end of the vbyte compressed data in a chunk.
+			8. Change append_posting() to use the bytes_used value in the NEXT field to determine where to 
+			   write the next payload.  (And write updated bytes_used and last_docnum values into NEXT.)
+			9. In calculate_k_tables() prevent a value of K which would cause the 19 bits of bytes_used to
+			   overflow.  (Using the validateK() function.)
+
+*** v1.4.27 developer1 02 July 2015 ***  
+	QBASHI:	1. Allocate_hashtable_and_heap() - Substantially increase the number of DOH blocks allocated.  
+			Increase bytes per doc from 1100 to 5000. Developer2 ran out when using -max_prefix_langth=16 on 
+			dataset with long records.
+
+
+*** v1.4.28 developer1 02 July 2015 ***  Step 3 in using compression in linked list chunks.
+	QBASHI:	1. Change calculate_k_tables() to work off chunk number rather than posting number (remembering that
+			   chunk numbers are limited to 2^16 - 1 because only 2 bytes are available in the Hashtable entry.)
+			   Make sure we don't generate negative numbers.
+			2. A major rewrite of append_posting() to work with this new regime
+			3. Substantial work on write_inverted_file() to work with this new regime  (In all the b_____ branches.)
+			
+			Passes qbash_index_modes_test.pl  (at last!)
+
+*** v1.4.29 developer1 03 July 2015 ***  Step 4 (hopefully final) in using compression in linked list chunks.
+	QBASHI: 1. Actually implement the v-byte writing and reading code within chunks. Several places in both
+			   append_posting() and in write_inverted_file().
+
+			   *** At the moment, write_inverted_file() actually decodes the bytes and then re-encodes them.
+			       It might save a little time to just copy them to output.  
+
+*** v1.4.30 developer1 0? July 2015 ***  
+	Oops - forgot to document this.
+
+*** v1.4.31 developer1 17 July 2015 ***  
+	QBASHI: 1. Implemented the x_sort_postings_instead option.  *** NOTE *** It does enough to enable a check
+			   of timing and memory requirements, but it's not actually capable of writing an index.
+
+
+#################################################################################################################
+#	CODING TASKS:
+#  CT1. Implement a mode in which a forward file is not read but rather terms and document boundaries are 
+#     randomly generated.  This serves too purposes:  It avoids the need to create massive .forward files on disk
+#     and eliminates forward file i/o and text scanning from List Build timing.  QBASHI now:
+#	    1. Accept ZIPF-GENERATOR as a special value of the index_dir argument.  It should automatically turn on
+#		   x_minimize_io and avoid opening any files.  Also, UNIF-GENERATOR and APRX-GENERATOR
+#	    2. Four additional parameters will be needed.  (Defaults matching a real collection, e.g idxNoUrl)
+#		   1. Total number of postings to generate  (x_synth_postings.  dflt 10 billion)
+#		   2. Size of the desired vocabulary (x_synth_vocab_size. dflt 100 million)
+#		   3. Desired average document length (x_synth_doc_length.  dflt 10)
+#	       4. The desired value of alpha in Zipf.  (x_zipf_alpha dflt -1.0).  Need to work out how to convert that to a power
+#	CT2. Add an option x_cpu_affinity to map the processor affinity to a single core (to reduce timing variability?)
+#	CT3. Inspect the code and remove any unnecessary statements which could interfere with I-cache residency
+#   CT4. Inspect the code to find out why using v-byte doesn't gain speed.
+#   CT5. Implement a dynamic array alternative to linked lists.  That's probably quite a big effort - will
+#      need to think how to do it.
+###################################################################################################################
+
+*** v1.4.32 developer1 17 July 2015 ***  
+	QBASHI: 1. Completed CT1 and CT2.  Linked in utils/get_random_numbers.c from Developer2.
+			   - Also support APRX_GENERATOR (approximate Zipf) and UNIF-GENERATOR (uniform) special values.
+			   - Decided not to hardwire x_minimize_io -- It may be useful to inspect the output files, particularly .vocab
+			   - NOTE that you won't be able to run queries against the index because the doctable is empty and
+				 there's no .forward file
+
+*** v1.4.33 developer1 23 July 2015 ***  Minor polishing of the changes 1.4.32 changes.
+	QBASHI:  1. Tweaking with random term generation
+			 2. Automatically setting x_hashbits for synthetic datasets based on the target vocab_size (unless X_hashbits is explicitly set)
+
+*** v1.4.34 developer1 24 July 2015 ***  
+	QBASHI: Report hashtable collisions and indexing rate at end of output.
+
+*** v1.4.35 developer1 24 July 2015 ***  
+	QBASHI: Trying to do a better job of generating a Zipfian distribution by integrating the Zipf's law curve
+
+*** v1.4.36 developer1 29 July 2015 ***  
+	QBASHI: Integrating Developer2's improvements to term generation in gen_random_numbers.cpp.  They actually made collisions worse.
+
+	The Mersenne Twister random number generator 
+		Explanation:  http://www.quadibloc.com/crypto/co4814.htm
+		Code for TinyMT: https://github.com/MersenneTwister-Lab/TinyMT
+		Licence: Free to use for any purpose: Three-paragraph BSD
+
+*** v1.4.37 developer1 30 July 2015 ***  
+	QBASHI: 1. Adding TinyMT code.   Replacing rand_gen() with front-end to initialise or call tinyMT
+		    2. Fixed the maths in getZipfianTermRandomNumber() -  It now works for alpha < - 1.0 (and
+				takes an error exit if alpha is too close to -1)
+
+*** v1.4.38 developer1 30 July 2015 ***  
+
+*** v1.4.39 developer2b 25 September 2015 ***  
+    QBASHQ: 1. Added in the flag "display_parsed_query" which lets the user display the query after application of the classification segment rules
+
+*** v1.4.40 developer1 30 Sep 2015 ***  
+	QBASHI: 1. Changes to QBASHI.cpp:process_records_in_file_order() to ensure that document offsets were updated correctly for all the categories
+	           of ignored records.  (Developer2 had found corrupted results in a collection which included empty triggers.)
+
+*** v1.4.41 developer1 30 Sep 2015 ***  
+	QBASHQ: 1. Changes to score() function in QBASHQ_lib.cpp to prevent division by zero in length scoring when document. is one word
+	           shorter than the query.   Problem reported and faulty code identified by Partha Parthasarathy
+
+*** v1.4.41 developer1 30 Sep 2015 ***  
+    QBASHI: 1. New approach to handling the tail part of ZIPF-GENERATOR collections.  New -x_zipf_tail_perc option.  If random number
+		       is generated within the singleton term region of the distribution, we just emit the next unused term number.
+			2. Output the number of documents indexed in the last few lines of output to make information extraction easier.
+
+*** v1.4.42 developer1 06 Oct 2015 ***    * Adding an option to allow very much larger triggers to be indexed. *
+    QBASHI: 1. Increase MAX_TRIGGER_LEN from 4000 to 4000000.
+			2. Define MAX_WDS_INDEXED_PER_DOC as MAX_WDPOS + 1  by default
+			3. Define new Boolean option x_bigger_trigger.  If TRUE, set MAX_WDS_INDEXED_PER_DOC to 100,000 (max length of an ANU PhD thesis.)
+	QBASHQ: 1. Functions which process the document text (e.g. possibly_record_candidate() and extract_text_features()) are still
+			   subject to tighter limits:  Up to WDPOS_MASK (255) words and MAX_RESULT_LENGTH (2000) bytes
+
+			The effect of this is that if x_bigger_trigger is FALSE, behaviour is as appropriate for indexing queries, titles, and other 
+			short texts.   If QBASHER is required to index and search much longer texts, x_bigger_trigger can be set to TRUE and words beyond
+			position 254 will be indexed.  However, all will have their position recorded as 254. 
+
+			------------ CAUTION WHEN USING X_BIGGER_TRIGGER=TRUE.  MISSES and FALSE POSITIVES  ------------------------
+			*** This means that phrases later in the document will not match a phrase query, and
+			*** There is the potential for false phrase matches.   E.g. say the word at position 253 in a doc is 'united' and the following words
+			*** are 'one', 'two', 'three', 'four' then phrases 'united one' (correct), 'united two' (false), 'united three' etc will all match.
+			*** There may be other adverse effects on use of classification mode etc too.
+
+*** v1.4.43 developer1 06 Oct 2015 ***    
+    QBASHI: 1. TIny tweak to time reporting at the very end. Increased precision
+
+*** v1.4.44 developer2b 10 Oct 2015 ***
+    QBASHQ:  Adding the ability to recognize the carousel vertical intent in a query, when -classifier_vertical=carousel is given.
+		    1. added apply_carousel_specific_rules() function to classification.cpp to recognize the vertical intent and strip intent words out of query
+
+*** v1.4.45 developer1 14 Oct 2015 ***    
+    QBASHQ: 1. Hooking in a PCRE2 project and confirming that we can actually build it.
+
+*** v1.4.46 developer1 15 Oct 2015 ***    
+    QBASHI: 1. Implementing a language variable and option.  It currently does nothing.
+    QBASHQ: 1. Implementing a use_substitutions variable.  It looks for a QBASH.substitution_rules_EN (or FR, DE etc)
+			   in either index_dir or the directory containing QBASH.config.  If found, that file is assumed to contain
+			   lines in the form: <regex> TAB <substitution string>
+			   Compiled regexes and substitution strings are stored in paralel arrays
+			   Incoming queries are subjected to transformations by each of the substitution rules.
+			2. The functions for loading and unloading rules and for performing substitutions are in a new
+			   substitutions.cpp module.
+			3. At the moment, a global substitution is performed, but processing of rules is stopped after the 
+			   first successful call to pcre2_substitute()
+
+*** v1.4.47 developer1 19 Oct 2015 ***   Filling code gaps in loading global_idfs and substitution_rules + better error reporting.
+    Shared: 1. Now, mmap_all_of() prints error messages giving the error and the name of the file affected.
+			   Previously, we had just returned an error code back through the chain of callers, leading to a generic 
+			   error message with no way to identify the problem.
+	QBASHQ: 2. Until now there was no way to specify .global_idfs and .substitution_rules files in either Aether mode,
+	           or in Object store.  There are now options fname_global_idfs and fname_substitution_rules for aether,
+			   and the conde which splits up the filename list parameter in ObjectStore now recognizes .global_idfs
+			   and .substitution_rules suffixes.  NOTE: In ObjectStore and Aether there is no language suffix to the 
+			   .substitution_rules suffix because you can specify the specific file you want.  The language value is
+			   still appended in the index_dir case.
+
+*** v1.4.48 developer1 19 Oct 2015 ***   Improving regex substitution mechanism
+    Shared: 1. Moved the substitutions from qbashq-lib to shared directory, in case we should want to use the capability in the
+	           indexer.  That meant passing individual items to functions, rather than just a pointer to a QP environment.
+			   It's the first time I recall using a triple star: pointer to a pointer to a pointer.
+			2. Changed apply_substitution_rules() to keep processing rules even if a rule matches
+			3. Changed apply_substitution_rules() to cease processing rules if the subject contains '['
+			    
+*** v1.4.49 developer1 19 Oct 2015 ***   Improving regex substitution mechanism  - better handling of square brackets
+			   Item 3 in 1.4.48 was too draconian.   In principle the way it should work is that each time a rule is 
+			   considered, it should be applied separately to each of the sections of the subject which are outside square 
+			   brackets.  E.g. if the subject is {vaccination of [dogs cats] against [rabies parvovirus] in Melbourne} the rule should be 
+			   applied to "vaccination of", "against", and "in Melbourne" and the results must be concatenated with the 
+			   square-bracketed sections.   Of course, the square bracketed sections may need to be re-identified after each substitution.
+			   This process is potentially time consuming and requiring of a lot of buffer-shuffling.   Potential optimisationgs include
+			   preserving knowledge of square bracket locations across substitions which can't or didn't result in extra square brackets.
+			   A rule whose RHS doesn't include square brackets can't introduce them into the string.
+			1. Introduce an array of byte-wide flags indicating whether the RHS of a substitution rule contains an operator which
+			   might cause trouble if substitution were to occur in the wrong context.  substitution_rules_RHS_has_operator[]
+
+*** v1.4.50 developer1 27 Oct 2015 ***   Unsuccessful fiddling with the synthetic collection generation maths.   It's currently buggy, sorry.
+	        1. get_random_numbers.cpp: getZipfianTermRandomNumber() - change the maths
+			2. qbashq-lib.cpp: possibly_record_candidate() - Apply the substitution rules to the candidate in modes
+				and cases where the text needs to be examined.
+			3. Give more explanation in the case of arg_parsing errors.
+			4. Enhance processing of substitutions.
+				- multisub() splits subject string into sections bounded / not-bounded by operators and prevents pattern
+				  substitution in operator sections.
+			5. In qbashq-lib.cpp:process_qtext(), change the order of application of the various text transformations, so that 
+			   we can apply substitution rules relating to apostrophes etc.
+			6. Classification:  Instead of strcmp() use term_match() when trying to match query words against candidate words.
+			   term_match() does the right thing with simple disjunctions and simple phrases but gives up ("no match") for 
+			   nested phrases and disjunctions.  We'll probably have to fix that before long.
+
+*** v1.4.51 developer1 29 Oct 2015 ***   More successful fiddling with synthetic collection generation maths based on 
+               approximating the cumulative Zipf curve, still with special coding of the singleton case.
+	qbashi: 1. get_random_numbers.c: getZipfianTermRandomNumber() - new version based on the cumulative probability 
+	           histogram.  Tidy up the code, remove BALLAST, update comments in various places. 
+
+*** v1.4.52 developer1 29 Oct 2015 ***
+	qbashi: 1. Further tidy-ups of synthetic generation.    Using a random seed for the random number generator.  Removing
+	           the hard-wiring of the value of alpha.  Printing a progress indicator after every 10 million fake postings
+			   indexed.
+
+*** v1.4.53 developer1 02 Nov 2015 ***
+	qbashi: 1. Add option -x_fname_synth_docs to allow specification of a filename (path) into which synthetically generated 
+	           documents are to be written.  Output is one line per synthetic document.  Each line consists of 
+			   a sequence of generated words, followed by a TAB, a weight (currently always 1) and a LineFeed
+
+			   
+*** v1.4.54 developer1 02 Nov 2015 ***
+	qbashq: 1. qbashq_lib.cpp: process_query_text() -  When in a classification mode, double quotes should be retained,
+	           therefore call strip_qbash_operators_except_quotes().  This allows substitution rules to be made for
+			   patterns like "lincoln s" which arise in the carousel application.
+			   			   
+*** v1.4.55 developer1 02 Nov 2015 ***
+	qbashi: 1. When writing synthetic documents, don't write anything if the calculated length is zero
+			2. When generating synthetic words, we can't use & because it's a token breaker.  Use # instead.  (We could also use +)
+	qbashq: 1. Output the original query too, when doing display_parsed_query.
+
+*** v1.4.56 developer1 05 Nov 2015 ***
+	qbashi: 1. Yet another go at the Zipf maths.  This time it's much better.
+	
+*** v1.4.57 developer1 12 Nov 2015 ***
+	qbashi: 1. Increase the number of doh_blocks substantially when the x_bigger_trigger is set.
+		
+*** v1.4.58 developer1 13 Nov 2015 ***
+	qbashq: 1. Remove a silly memory leak with substitution rules, caused by failing to call pcre2_match_data_free()
+			2. Fix up an indirection error when printing default values of string valued arguments  (arg_parser.cpp)
+					
+*** v1.4.59 developer1 13 Nov 2015 ***
+	qbashq-lib: 1. fflush stdout after loading indexes
+				2. Don't generate an error exit if the config file isn't there.
+									
+*** v1.4.60 developer1 23 Nov 2015 ***  Tidying up some QBASHI options.
+	qbashi: 1. Remove the x_fileorder_use_mmap option.  It's always FALSE.
+			2. Change the default for x_use_vbyte_in_chunks to TRUE.
+			3. Change the default for x_2postings_in_vocab to TRUE.
+												
+*** v1.4.61 developer1 24 Nov 2015 ***  
+	qbashq: 1. In classification.cpp:classifier(), ifdef out the block of code which checks for ambiguous classification results
+			2. In classification.cpp:term_match(), an error message: "Phrase within disjunction is too b______ complex!" was produced.
+				- the test for complexity was too simple-minded anyway.
+				- Add extra code to support phrases within disjunctions in classifier modes
+				- Get rid of the complexity test and the b______ error message
+			3. normalize_qtext() - fixed bug which removed quotes from within a disjunction.
+			4. classifier_validate_settings() - fixed bug which set too tight a length limit when query contained operators
+				- Introduced a query_has_operators BOOL in qex.  (QBASHQ.h)
+																
+*** v1.4.62 developer1 24 Nov 2015 ***  
+	qbashq: 1. In classification.cpp:term_match(), an error message: "Disjunction within phrase is too b______ complex!" was produced.
+				- the test for complexity was too simple-minded anyway.
+				- Add extra code to support disjunctions within phrases in classifier modes
+				- Get rid of the complexity test and the b______ error message
+																				
+*** v1.4.63 developer1 24 Nov 2015 ***  
+	qbashq: 1. Fixing a SEGFAULT reported by Developer2.  In classification.cpp:term_match() the code must take
+	           into account that elements of the dwds[] array may have been replaced by the index within 
+			   the query of a term earlier in the query (cast as a (char *) pointer) which matched this term. 
+			   If the code attempts to access the dwds[] element, a SEGFAULT will ensue.  Added tests 
+			   to detect this and signal failure to match. 
+																				
+*** v1.4.64 developer1 25 Nov 2015 ***  
+    qbashi: 1. Add a parameter to allow the variance of the term length distribution to be controlled.  
+			   -x_synth_doc_length_stdev.  It's initialized to UNDEFINED_DOUBLE and set to half the 
+			   mean, if not explicitly set. The values of mean and st.dev parameters are now printed
+			   in the indexing log.  I confirmed that the values printed are appropriate when the 
+			   stdev param is given and when it is not, and also that indexing completes normally and 
+			   that the number of documents created with default stdev is what it used to be.  Haven't
+			   checked what effect it has on the shape of the distribution.
+
+			   I wonder if the distro should be lognormal rather than normal
+
+*** v1.4.65 developer1 02 Dec 2015 ***  
+    qbashi: 1. Reviewing and better documenting the code in getZipfianTermRandomNumber() and ifdeffing out
+	           testing/debugging code
+			2. Adding an option to allow explicit specification of the word probabilities of an aritrary 
+			   number of head terms.   -x_head_term_percentages
+			   
+*** v1.4.66 developer1 02 Dec 2015 ***  
+   qbashi: 1. Fixing glitch or two in synthetic term generation introduced in last edit.
+			   
+*** v1.4.67 developer1 03 Dec 2015 ***  PCRE2 out of memory issues.
+   qbashq: 1. Imposing a tight limit on the length of an input subject string in apply_substitution_rules().  
+	          If input is longer than this, no substitutions are attempted.  (Better than previous version
+			  which arbitrarily truncated the input.)  The subject pattern can grow substantially as a result
+			  of substitutions, and may eventually be truncated if a much higher length limit is exceeded.
+			  			   
+*** v1.4.68 developer1 03 Dec 2015 ***  Fix bug in stitching together explicitly specified head terms and zipf simulated middle section
+   qbashi: 1. I prefer to regard it as a mathematical misunderstanding rather than a bug.  getZipfianTermRandomNumber now has an extra 
+			  parameter F, the lowest valued term to be generated.  It moves the generation down the power law curve -- Important
+			  because it's in linear space.
+			  of substitutions, and may eventually be truncated if a much higher length limit is exceeded.
+			  			   
+*** v1.4.69 developer1 10 Dec 2015 ***  Addressing Developer2-reported bug triggered by -classifier_threshold=0.0
+	qbashq:   It seems to be the case that the fundamental problem is related to memory allocation/freeing
+		      caused when a query is or ends up empty.  
+		   1. process_query_text() - test for empty query and return 0.  
+		   2. process_query_text() - return query_word_count instead of 0 for non-error
+		   3. handle_one_query() - return 0 if process_query_text() does
+		   4. QBASHQ.cpp:thread_run_query() - Don't call free_results_memory() unless there is something to free.
+		   			  			   
+*** v1.4.70 developer1 10 Dec 2015 ***  Moderately serious memory leak when using substitutions.  
+			ERROR: Memory grew too much (by 112.1MB), probable leak.  from qbash_substitution_rules_timing_check.pl
+   qbashq: 1. Tighten up on all the exits from handle_one_query() -- there are quite a few -- to make sure
+	          allocated memory has been free-ed before return.  No error now detected.
+		   			  			   
+*** v1.4.71 developer1 14 Dec 2015 ***  
+   qbashi: 1. Avoid thread errors when indexing in file order with low max_docs.  Introduced a fourth state:
+			  BUF_ABORT_READING.  Set the state of the next buffer to fill as that, and have the buffer filler
+			  test for it.
+		   			  			   
+*** v1.4.72 developer1 14 Dec 2015 ***  
+   qbashi:   Adding the capability (via -x_doc_length_histo=TRUE) to produce a histogram of document lengths
+			 in QBASH.doclenhist -- Only applicable when index_dir is given
+		   			  			   
+*** v1.4.73 developer1 23 Dec 2015 ***  Trying to add the capability for quadratic modeling of the term freq distribution
+	qbashi:  1. Add utils/erfi.cpp and utils/erfi.h, cut-down versions of open source libcerf.
+			 2. Remove some useless code in utils/get_random_numbers.* and calls from QBASHI.cpp
+			 3. Remove definitions of TERM_GEN_UNIFORM and TERM_GEN_APRX -- not used.  It's now either TERM_GEN_ZIPF 
+				or TERM_GEN_OFF
+			 4. Add x_zipf_gamma (even though it's Laherrere, not Zipf, when we use beta and gamma)
+			 5. Partial implementation of getLaherrereTermRandomNumber()
+			 6. A bit of plumbing work to get the alpha, beta and gamma values through to getLaherrereTermRandomNumber()
+			    --- implementation incomplete ---
+	dahash:  1. dahash tables were unnecessarily limited to 1 billion entries and that caused Bigrams_from_TSV to crash
+	            on the tweets collection (near the end.)  Promoted capacity and entries_used to size_t from int and 
+				(hopefully) made all the necessary changes.  In many cases the calculations were done in 64 bit 
+				and there was a lot of unnecessary casting back and forth.  It seems as though things are behaving
+				as they should.  The 1 billion limit which triggered the error exit was changed to 1 trillion.
+						   			  			   
+*** v1.4.74 developer1 29 Dec 2015 ***   Arranging to calculate and print mean and stdev of doc lengths in QBASHI when x_doc_length_histo=TRUE
+	qbashi:  1. Modify write_doclen_histo() to calculate the mean and standard deviation:
+
+						   			  			   
+*** v1.4.75 developer1 30 Dec 2015 ***   
+	qbashi:  Representing x_synth_postings and x_synth_vocab_size as doubles rather than uint64_ts for flexibility on input
+
+							   			  			   
+*** v1.4.76 developer1 31 Dec 2015 *** 
+	qbashi:	1. Arrange for doclength mean and stdev are written when -x_doc_length_histo=TRUE even if the 
+	           histo is not written to file.  Also initialise doclen_mean and doclen_stdev to zero just in case.
+			   Finally, fix an off-by-one error in zero-ing the malloced histogram.
+							   			  			   
+*** v1.4.77 developer1 31 Dec 2015 *** 
+	qbashi:	1. Fixing another glitch in -x_doc_length_histo=TRUE when index_dir == ZIPF-GENERATOR
+								   			  			   
+*** v1.4.78 developer1 31 Dec 2015 *** More tidy up.  
+	qbashi:	1. In the ZIPF-GENERATOR case the QBASH.doclenhist is again written to "." like the
+			   other index files.  (I'd forgotten that index_dir is set to "." in the ZIPF-GENERATOR case.)
+			2. In calculate_k_table(), replace the annoying warning message about Chunk Table Overflow with 
+			   a message conveying information about what's happening.  The special case handling would only
+			   occur after seriously large numbers of postings.
+		   								   			  			   
+*** v1.4.79 developer1 31 Dec 2015 *** Version 1.4.77 crashed on redsar when generating > 1 billion ZIPF postings with doc_length_histo=TRUE
+	qbashi: 1. Checked and tidied up various things.  Found small problem with non-ZIPF case but couldn't see anythihg wrong with ZIPF
+		    2. Ran code analysis and fixed up a lot of small problems.   A lot of pointer errors are reported, despite that they are 
+			   guarded :-(
+			   		   								   			  			   
+*** v1.4.80 developer1 *** Still tracking down the cause of the qbashi segfault.   NOW FIXED.
+	qbashi: 1. Making sure that the doc_len_histo array is the size it ought to be.  It is.
+		    2. Putting a few checks on the buffer size in convertTermNumberToWord()
+			3. Aha!  rand_normal() called in process_fake_records() is capable of generating zero or
+			   negative values.  They can lead to negative lengths, and the writing to beyond the  left
+			   end of the doc_length_histo.  Put in a loop to discard lengths less than 1.
+			   			   		   								   			  			   
+*** v1.4.81 developer1 ***  Investigation of perturbations in emulated graph
+	qbashi:	1. Added -x_zipf_generate_terms option to allow suppression of Developer2's term representation
+	           algorithm in favour of numerical terms prefixed by h, m, or s, indicating how they
+			   were generated:  head, middle or singleton.  Allows debugging of term generation. 
+			   One look at the vocab.tsv provided the bulk of the explanation.
+
+			   			   		   								   			  			   
+*** v1.4.82 developer1 ***  Implementation of piecewise linear approximation of middle segment
+	qbashi: 1. Add -x_zipf_middle_pieces option which allows the specification of segment descriptor
+			   tuples. Tuples are terminated by a '%' and the five elements of a tuple are separated
+			   by commas.  Tuple strings are parsed by setup_for_piecewise_linear() which exits on errors.
+			   For each tuple an element of an array of midseg_desc_ts is initialised, including 
+			   calculation of the derived variables necessary for getZipfianTermRandomNumber()
+			2. If -x_zipf_middle_pieces is not used, then a single midseg_desc_t is setup.  In this
+			   case the derived variables are calculated on the first call to getZipfianTermRandomNumber()
+			3. drawHeadMiddleTailModifiedZipfTerm() now makes a top-level decision: head, middle, tail
+			  to avoid going through unnecessary loops for head and middle.  Also, the random number
+			  'which' which is used to make the selection is expanded in the right way and passed
+			  to getZipfianTermRandomNumber() to avoid the need for the latter to call the random
+			  number generator again.
+
+*** v1.4.83 developer1 ***  Fixing up issues for Object Store usage
+	qbashq-lib: 1. Fix bug in loading .substitution_rules and .global_idfs files - split_filelist_arg()
+			    2. Allow caller to introduce temporary QBASHER options after TAB in query.
+				3. A bunch of options to do with classification were marked as Immutable.  Change them 
+				   to mutable to enable more flexible experimentation in Object Store.
+				4. Change the config of QBASHCsharpNative to build its exe in x64/Debug so the DLLs are found.
+				5. When unloading local_qoenv DON'T free substitution_rules and global_idfs unless you like
+				   debugging SEGFAULTs
+
+
+*** v1.4.84 developer1 ***  Changing the way classifier_segment works
+	Until now, when a query matched the intent patterns defined for a segment, 1.0 was added to the match
+	scores of all the responsive documents.  But the exact-match early termination rule meant that even a faintly 
+	matching document scores more than 1.0 and causes early termination. 
+	
+*** v1.4.85 developer1 ***  Further improvements to classifier mode.
+    Up until now, accepted candidates in classifier modes are not sorted.  In the case where max_candidates > max_to_show
+	there may be high scoring results among the accepted candidates which are not shown to the user.   The obvious
+	solution is to use a heap of max_to_show items to record (and order) only the top items.
+	qbashq-lib: 1. 
+ 	
+*** v1.4.86 developer1 ***  Trying to track down a memory corruption problem in the previous version QBASHQ
+	- passed all the build tests but crashed randomly in classifier mode, on a particular combination of 
+	  query set and lyrics index.
+    1. Various small changes made but they didn't address the main problem
+	2. handle_one_query() - make sure that max_candidates is one greater than max_to_show.  I haven't observed
+	   any further crashes with this in place, but nor have I managed to find what part of the code is writing
+	   one element beyond where it should.
+ 	
+*** v1.4.87 developer1 ***  QBASHI: more detailed recording of option settings
+	qbashi: 1. Implemented store_arg_values() in two versions one which includes experimental options and the other
+		       doesn't
+			2. Write non-experimental options into the .if header -- the full set is too long
+			3. Write the full set of option settings on stdout.  (> index.log)
+ 	
+*** v1.4.88 developer1 ***  Implementing better early termination controls for classifier modes
+	qbashq: 1. Implement classifier_stop_thresh1 and classifier_stop_thresh2 (floats) arguments.
+			   Stop as soon as a score higher than thresh1 is stored.  Note: it could be a relaxed result
+			   Stop as soon as all slots in all result blocks are full and all of the stored scores are 
+			   higher than thresh2.
+			2. In the course of testing this, discovered what was wrong with the classifier() function in
+			   classification.cpp.  Rewrote to assume that when relaxation_level > 0 all result blocks 
+			   are sorted in descending score order and that the task is just to merge the lists until
+			   max_to_show results have been stored
+ 	
+*** v1.4.89 developer1 ***  Extra info in results
+	qbashq: 1. Implement include_result_details option
+
+*** v1.5.0 developer1 *** Increase header size, and include an idf field in .vocab
+	qbashi:	1. Increase IF_HEADER_LEN and PAGESIZE from 1024 to 4096
+			2. Change store_arg_values() call in Write_Inverted_File.cpp to store experimental options too.
+			3. Major change in what's stored in .vocab file entries.  In both cases the length of the .vocab 
+			   entries is 28 bytes.  In both cases, the first 16 bytes are used to store a null-terminated
+			   string.  
+			   
+			   UP UNTIL NOW
+			   the remaining bytes were used as follows:
+			   4 bytes - occurrence count.  That's notenough for a 100B record collection
+			   2 bytes - wasted
+			   6 bytes - Either 5byte docno + 1 byte wpos (for a single posting)
+			             Or 6 byte offset into .if file.
+
+			  FROM NOW ON
+			  5 bytes - occurrence count.  That's enough for a trillion occurrences
+			  1 byte - quantized representation of IDF.
+			  6 bytes - Either 5byte docno + 1 byte wpos (for a single posting)
+			            Or 6 byte offset into .if file.
+
+			  Is 1 byte enough to store sufficient IDF information?  Assuming IDF = log(N/n), where N is the 
+			  number of records and n is the number of documents containing this term, then the maximum IDF
+			  is log(N).  To make use of all the available values in an unsigned byte, we can multiply actual
+			  IDF scores by C = 255 / log(N).  For a collection of 200M records (such as the current lyrics
+			  index), C = 13.3411 and a term which occurs in only one record will achieve a quantized score 
+			  of 255, while a term which occurs in two will score 246.  After divding those quantized scores
+			  by C again, the values come out at 19.11 and 18.44 (compared with actual scores of 19.11 and 
+			  18.42 respectively).  
+
+		   4. Define vocabfile_entry_packer/unpacker functions in utility_nodeps.c plus a test function.
+		   5. Define get_idf_from_quantized() and quantized_idf to work with to an arbitrary number of bits 
+		      (between 1 and 32).  Also write a test function.
+		   6. Change get_global_idf() to make use of the quantized idf from the .vocab file rather than 
+		      the global_idfs file.
+		   7. Removed all reference to the .global_idfs file from the QBASHQ code.
+		   8. Make vocab_lister compatible with the new .vocab format (and promote various counters to 64 bit)
+
+		   
+*** v1.5.1 developer1 *** Fix bug in presenting extra columns in classifier results
+	qbashq: 1. There were two bugs in utility_nodeps.c:extract_field_from_record() ... and there was no build 
+				test of this. Now there is.
+		   
+*** v1.5.2 developer1 *** Ruggedize the code in load_substitution_rules()
+	qbashq: 1. Flakey behaviour with respect to loading QBASH.substitution_rules_EN from an index_dir with a 
+		       trailing slash was hard to debug.  Rewrote the code to:
+			   a. Make it more stable
+			   b. Avoid arbitrary limits on path lengths
+			   c. Provide diagnostic output when debugging is requested.
+			   		   
+*** v1.5.3 developer1 *** Ressurect the capability to do simple Zipf term generation.
+	qbashi: 1. Gather together all the generation parameter setting code in a function: set_up_for_term_generation()
+			    - systematically deal with undefined option values
+				- if alpha isn't defined call a new find_alpha() function to estimate it from N and |V|
+					- if alpha estimation doesn't converge, the code complains and exits.
+				- if no middle segments are explicitly defined, then we simulate a single one, calculating 
+				  it's parameters from head and tail percentages and alpha.
+				- There is a general problem with synthetic generation that it's easy to specify parameter combinations
+				  that don't make sense, don't work, or cause a crash.  *** Not sure what to do about this ***
+				- We need to write a lot more tests for various synthetic generation cases. -- one small step taken!
+
+		    *** this version is a good step forward in terms of use of QBASHER as a benchmarking tool, however
+			    considerably more work is needed on understanding the Zipf maths, leading to a more realistic
+				version of find_alpha().   Two issues are that when you speciy parameters with N == |V|
+				you don't get a uniform disribution, and you don't get a change in the tail percentage.
+							   		   
+*** v1.5.4 developer1 *** Starting to record quantized IDFs in the index.
+	qbashi:    To avoid the need for a lot of extra memory during indexing and significant code changes
+			   I decided to estimate the IDF as IDF = log(M * C / F), where F is the total occurrence frequency
+			   for this term, M is the maximum occurrence freq./uency for any term and C is a constant to scale
+			   things so that the minimum QIDF for any term is 1 and the maximum is 255.
+			   Unfortunately, the Query Processor doesn't have access to the maximum occurrence frequency so
+			   when converting the quantized IDF value back to an IDF, we have to use N the number of 
+			   documents rather than M.
+							   		   
+*** v1.5.5 developer1 *** Actually fixed the problem finding the substitution_rules file (see 1.5.2 above)
+	qbashq:
+
+							   		   
+*** v1.5.6 developer1 *** Before doing substitutions, replace Win-1252 punctuation with spaces.
+
+*** v1.5.7 developer1 *** 
+	qbashq:	1. emit substution error messages only when debugging
+
+*** v1.5.8 developer1 *** Addressing problem of lyrics queries which should match but don't 
+	qbashi: 1. Add '!' to set of token break characters
+			2. Add an option "-expect_cp1252" to add all the Windows extended punctuation set to the token breaking set.
+	qbashq: 3. Read the value of the expect_cp1252 option from the .if header and use it to decide whether to extend
+	           the token breaking set.
+			   
+*** v1.5.9 developer1 *** Still there were problems with curly quotes in queries
+	qbashq: 1. The whole normalisation of query text was a mess.  Tidied it up.
+			2. Removed the normalize option - it wasn't being used.
+			3. Fixed the computation of total_cost.  It had always been wrong.
+			4. Fixed a bug in normalize_delimiters() which caused two adjacent phrases to amalgamate.
+			   
+*** v1.5.10 developer1 *** Optional extra feature output in classification mode
+	qbashq:	1. New BOOL option:  include_extra_features
+			2. If include_extra_features is set then 6 doubles are output with each result in classifier modes:
+				Q - number of query terms (term = word, phrase, or disjunction)
+				D - number of terms in document (I guess that's words or matched phrases - need to check)
+				I - number of intervening words in the span of matched query words
+				M - number of missing query words  in this candidate
+				S - number of order swaps in the query words matched in this candidate
+				static score.
+				(Note that the numbers of words will be sums of IDFs in classifier modes 2 and 4)
+			3. Various extra plumbing to facilitate this.
+
+			   
+*** v1.5.11 developer1 *** 
+	qbashq:	1. Change zeta to omega (to allow for extra coefficients in relevance ranking) and remove it
+		       from the rr_coeffs[] array.   It shouldn't be included in coefficient normalisation.
+			   The reason for the name change is that we may eventually want to add more coefficients to the
+			   relevance scoring formula.   Using Omega for classification makes all the earlier Greek
+			   letters available:  zeta, eta, theta, iota, kappa, lambda, mu, nu, xi, omicron, pi, rho,
+			   sigma, tau, upsilon, phi, chi, psi.
+			2. In classification_score() test omega for zero before working out how to combine DOLM and
+				static scores.  If omega == 0.0 the DOLM is represented in the first two digits of the
+				decimal fraction and the static score in the less significant part.
+			3. Add two more fields (Jaccard DOLM and DOLM) to the include_extra_features output.
+			   
+*** v1.5.12 developer1 *** Fix a long-standing bug in calculating the number of swaps S in the classification formula
+	qbashq: 1. classification.cpp:classification_score()  - taking into account missing words, insertions and disjunctions with phrases etc.
+				- it would be good to have a more comprehensive library of tests of this score calculation.
+							   
+*** v1.5.13 developer1 ***  Implementing the -x_batch_testing option (query on same line as results)
+							   
+*** v1.5.14 developer1 *** Fixing typo in implementation of -x_batch_testing option which caused garbage when a query in a batch had no answers.
+							   
+*** v1.5.15 developer1 *** 
+	qbashq: 1. Change the classifier_score() formula for classifier_mode=1 to more heavily penalise missing query words -- add M * MWT to the denominator
+			   instead of just M, where MWT is the penalty for a missed query term.  MWT = (6 - Q), with a minimum of 1.
+			   This change was prompted by the query "Hello. Will I am".  The candidate 'Will I am' scored 0.75 while 'Will I am. Hello' scored only
+			   0.66. Now the former scores only 0.5.
+			2. Display op_counts and costs if -x_show_qtimes=TRUE.
+									   
+*** v1.5.16 developer1 *** 
+	qbashq: 1. Introduce a classifier weighting coefficients chi and psi, to allow classifier scores to be a linear combination of 
+			   lexical degree of match (weight chi), a score in 0 - 1 derived from record type (weight psi), and static score (weight omega).
+	           The record-type score is derived from the extra_col field of the candidate record.  It is currently only used to promote matches 
+			   on title, artist/title and title/artist over others -- If the field is "T", "AT", or "TA" the score of this feature 
+			   is 1.0, otherwise it's zero.
+
+*** v1.5.17 developer1 04 May 2016 *** 
+	qbashi: 1. Implement utf8_getchar() function and unicode_ispunct() macro.  Note that if a leading byte is encountered which is in the
+			   range 0x80 - 0xBF (illegal UTF-8) it is assumed that that byte is a Windows-1252 punctuation or symbol character, and 
+			   it is converted to the Unicode equivalent.
+			2. Use them in a mass of places in QBASHI.cpp to try to detect Unicode punctuation as token-breaking
+
+				*** NOTE:  After implementing all this stuff in utility_nodeps.cpp, I discovered that there was already a UTF8.cpp 
+				module in the Query Processor.  Functions in that module are never used.  It was last updated on 11 May 2015 -- I guess
+				I stopped bothering when interest in deploying QBASHER lyrics service seemed to wane.
+
+	qbashq: 1. In classification.cpp, make sure that matches to  a single word query are classified as AND or EXACT rather than SEQ or PHRASE.
+			2. Remove "english" and "in english" from the lyrics segment tables in classification.cpp
+			3. Add an extra column in classifier output (to the right), containing a count of the words in the query as actually processed.
+			4. Use utf8_getchar 
+			
+*** v1.5.18 developer1 11 May 2016 *** 
+	qbashq:   In edit 3 in the previous version, the number in the extra column was preceded by spaces.  That caused a problem with Steve's
+			  consumer code.  This version elides leading spaces.
+			  			
+*** v1.5.19 developer1 17 May 2016 *** 
+	qbashq: 1. Allow a .query_batch file to be specified in an object_store_files option.
+			2. Make a mass of configuration setting changes (and a couple of changes to PCRE2 source) to allow QBASHQ and QBASHQsharpNative
+			   to build for Release
+			   			  			
+*** v1.5.20 developer1 25 May 2016 ***  [[ Converting all solutions from VS2013 to VS2015]]
+	qbashq:	1. Avoid error message if object_store_files argument includes consecutive commas.
+			2. Fix up some errors (abs -> fabs) and warnings detected by VS 2015  (Similarly for qbashi)
+			3. Allow a .output file to be specified in the object_store_files list
+			4. Fix the "Query timeout count:"  at the end of a QBASHQ run.  (Uninitialised variable)
+	QBASHQsharpNative  1. Substantial changes to allow queries to come from either a file or stdin.
+
+*** v1.5.21 developer1 31 May 2016 ***  Implementing the ability to synthesize document lengths according to a gamma distribution rather than a Gaussian
+	qbashi:	1. Options: x_synth_dl_gamma_shape, x_synth_dl_gamma_scale
+		    2. Functions: rand_gamma() and test_rand_gamma()
+			3. If x_synth_dl_gamma_shape is defined, Gamma will be used instead of Gaussian.
+				
+*** v1.5.22 developer1 16 Jun 2016 ***  Implementing the ability to synthesize document lengths according to piecewise segments
+	qbashi: 1. Option: x_synth_dl_segments
+			2. Function: rand_cumdist()
+			3. if x_synth_dl_segments is defined, segments will be used instead of Gamma or Gaussian.
+							
+*** v1.5.23 developer1 23 Jun 2016 ***  Tracking down a segfault when simulating ClueWeb12Titles using dlsegs
+	qbashi: 1. drawHeadMiddleTailModifiedZipfTerm() allow for the possibility that expanded_r maybe equal to -0.0, thus avoiding very infrequent
+	           error messages.
+			2. Print doc count and vocab size at the end of the document scan
+			3. Write the document length histogram at the end of the document scan
+			4. Fix a couple of errors in what's printed out by doh_print_usage_report()
+			5. Double the size of MAX_VALSTRING in arg_parser.h to reduce chance of truncation of long arg strings.
+			6. Increase the size of string buffer used in print_version_and_option_settings() to reduce chance of truncation.
+			7. Print a message for every 10 million documents scanned in doc synthesis.
+			8. Implement the test_rand_cumdist() function.  (It passed.)
+			9. Print a message for every 100 thousand terms processed in write_inverted_file()
+										
+*** v1.5.24 developer1 24 Jun 2016 ***  
+	qbashi:	1. Edit 1 in 1.5.23 went a little far and caused error exits.  Backing off.  (SEGFAULT on clueWeb12Titles no
+	           longer occurs.)
+			   										
+*** v1.5.25 developer1 24 Jun 2016 ***  
+	qbashi	1. Converting real-valued lengths to integers should use ceil() for the piecewise method, rather than
+			   round().
+			2. The rand_gamma() function neglected to save alpha to last_alpha, costing a little in efficiency.
+						   										
+*** v1.5.26 developer1 27 Jun 2016 ***  Significant changes to document length modeling
+	qbashi	1. Adding utils/dynamic_arrays module
+			2. Refactoring so that document lengths are selected from an in-memory dynamic-array 
+			   histogram.  dlgamma, dlnormal, dlsegs now generate the histogram prior to fake_doc_scan.
+			3. Added x_synth_dl_read_histo option to allow a document length histogram to be read from
+			   an existing doclenhist file.
+						   										
+*** v1.5.27 developer1 01 Jul 2016 ***  Synthesized collections don't write out .doctable when they should.
+	qbashi	1. Writing out a doctable entry with some bogus entries like score and doc signature -- 
+			      maybe we should fix the latter.
+			2. process_fake_records() now returns a correct value for infilesize
+			3. The qbash_synthetic_check.pl build tests have been enhanced to create a known-item query
+			   and run it over the on-the-fly synthesized indexes.  -debug=3 is used to make QBASHQ conduct
+			   tests on the indexes prior to running the query.
+						   										
+*** v1.5.28 developer1 05 Jul 2016 ***  Not sure that anything was changed
+
+*** v1.5.29 developer1 09 Jul 2016 ***  
+	qbashi	1. Increase MAX_LINE to 1 million when -x_bigger_trigger is set. Otherwise (in file order indexing
+	           only) some words in very long documents won't be indexed.
+
+*** v1.5.30 developer1 11 Jul 2016 ***  WT10g documents can be megabytes long
+	qbashi	1. Increase IBM_IOBUFSIZE to 10MB from 1  (formerly known just as IOBUFSIZE)
+	`       2. Increase MAX_LINE to 10 million and words_indexed_per_document to 200k in the bigger_trigger case.
+	
+*** v1.5.31 developer1 12 Jul 2016 ***  By default, don't allow per-query options. At request of Stevenga
+	qbashq  1. -allow_per_query_options option and qoenv member.  FALSE by default.
+			2. In three places, strip tabs unless this option is set.
+	
+*** v1.5.32 developer1 14 Jul 2016 ***  Reduce risk of crashes if per-query-options are allowed and rubbish is included
+    qbashq	1. The loops for parsing out per-query options in handle_one_query() tried to allow for quoted arguments
+	           but didn't handle the case of unbalanced quotes (e.g. apostrophes).  That led to segfaults in queries
+			   which had a TAB followed by an unbalanced quote.  For now, removed the quote-handling altogether.  Any
+			   per-query options shouldn't be quoted.
+	
+*** v1.5.33 developer1 14 Jul 2016 ***  
+	qbashi	1. Add caveat to message for max_line_prefix_postings option.
+			
+*** v1.5.34 developer1 24 Aug 2016 ***   *** Debugging production segfault ***
+        qbashq  1. Found a spurious statement in term_match() function at line 525 in classification.cpp
+                        //*q = qsave;  // This was the cause of production crashes 24 Aug 2016
+                2. Added a remove_possessives parameter to normalize_qtext() in qbashq-lib.cppp
+                3. Possible future belts and braces.  In any non-zero classifier_mode: at line 3413 in qbashq-lib.cpp
+                        // New as of 24 Aug 2016 (in response to production crashes)
+                        strip_qbash_operators(query_string);
+                        normalize_qtext(query_string, TRUE, FALSE, local_qenv->debug);
+
+                        *** Not active at this time because of:
+                        1. Change in behaviour needs mods to build tests
+                        2. Occasional random segfaults
+
+********************************************************************
+* Move to GIT repository and very extensive changes to support
+* compilation with gcc.  QBASHER_LITE and QBASHER_SYNTHETIC
+* definitions.
+* Note that changes described in v1.5.34 above were retrofitted into
+* the gcc-compatible version.  
+********************************************************************
+
+*** v1.5.50 developer1 25 Aug 2016 ***  Jump in minor number to reflect
+    GIT change
+
+*** v1.5.50A developer1 26 Aug 2016 ***   *** Another segfault in
+    OS lyrics production, and a memory leak ***
+    (A) indicates changes applied to version 1.5.34A in TFS
+    qbashq  1. Implemented a simpler and more draconian input cleaner:
+	       trim_and_strip_all_ascii_punctuation_and_controls()
+ 	    2. Call it from around line 3456 of qbashq-lib.cpp
+
+*** v1.5.51 developer1 29 Aug 2016 ***   *** A segfault uncovered by
+    fuzz queries. ***
+       qbashq: 1. normalize_delimiters() didn't correctly handle the
+                  removal of double quotes.  Major rewrite.
+ 	    2. Call it from around line 3456 of qbashq-lib.cpp
+	    -- This fix NOT applied to the TFS version or installed in
+	    -- OS lyrics production because calssifier_modes remove
+	    -- all punctuation.
+
+*** v1.5.52 developer1 05 Sep 2016 ***  *** Addressing Wunderlist issues ***
+       qbashq: 1. Hundreds of minor changes to ensure compilation
+                  succeeds with gcc -Wall
+	       2. Add 0777 mode to files created with open_w()
+       
+
+*** v1.5.53 developer1 05 Sep 2016 ***  *** Making VS projects/solutions
+                                          for all the programs***
+       Only three immediate problems:
+         1. QBASHQ.exe built by VS under GIT seems to be 3.5 times slower than
+            the one built by VS from the TFS sources.
+	 2. QBASHQsharpNative reports errors when run from the build
+            tests.
+	 3. Times and QPS values are not being reported in the GCC
+            version		  
+       
+*** v1.5.54 developer1 06 Sep 2016 ***  *** Getting QBASHsharpNative
+                                          to work ***
+	 1. Changes to the project definitions to include and
+            reference the libraries
+	 2. Fix up single-threaded path in main loop in QBASHQ.c
+	    so that it records and reports latency and QPS numbers
+       
+*** v1.5.54 developer1 06 Sep 2016 *** Fixing QBASHI segfault on
+                                     GCC file-order indexing
+	 1. The code in write_inverted_file() to handle the
+            non-threaded wasn't actually written.  It is now.
+	 2. Improved the Makefile.
+	 3. Added O_TRUNC to the open options in open_w() - otherwise
+            length of .vocab was wrong.
+        
+*** v1.5.55 developer1 07 Sep 2016 *** Tracking why GIT /VS2015 version
+                                     is slower than TFS/VS2015
+	 1. Avoiding the exit when warm_indexes=true is given.
+	 2. Make sure inthebeginning timer is started just before
+	    running a query batch - after any warm up
+	 3. Aha!  Removing the temporary statement which set
+            query_streams to 1
+	 4. QBASHI: Reinserting some statements which got lost from
+	    process_records_in_file_order() -- to calculate the size
+	    of the .forward file.  Result was that the number of
+	    lines was estimated to be zero, and indexing failed
+            because the DOH wasn't large enough.
+	 5. QBASHQ: Forgot to document previously that -warm_indexes
+	    no longer causes QBASHQ to exit.  Warm_indexes can be
+            combined with other options.  That means that
+            output_statistics should not be set to false on the
+	    presence of this option.
+		-- This version passes build tests with both VS and GCC versions
+		-- It should be ready to use for the next DLL to go into 
+		-- ObjectStore.
+
+*** v1.5.56 developer1 07 Sep 2016 *** Adding GCC threading to QBASHQ
+	1. Unfortunately performance is very poor
+
+*** v1.5.57 developer1 16 Sep 2016 *** Chasing a fleeting segfault (classifier + relaxation)
+	1. Increase the maximum length of input string to apply_substitution_rules_to_string() 
+	   to 256 and the maximum output length to MAX_RESULT_LEN.
+	2. Change classifier_mode section of possibly_record_candidate() to
+	   use dc_copy (lowercased, and substituted) rather than going back to
+	   the original.  More efficient and reduces demand on stack memory
+	3. Fix error in calculation of I in classification_score() - Note that 
+	   this required some minor changes in qbash_classifier_modes_test.pl
+	4. Explicitly initialise all the local variables in classification_score(),
+	   possibly_store_in_order() and possibly_record_candidate()
+	5. Checked code in possibly_record_candidate(), possibly_store_in_order() 
+	   and classification_score()
+
+*** v1.5.58 developer1 19 Sep 2016 *** Complete rewrite of Windows threadpool use
+    as per Implementing a simple worker farm with a Windows threadpool - Dave OneNote
+	1. Also changed things so that query_streams=1 causes the unthreaded code to run
+	   (necessary to run tests involving debug=1 output because that isn't synced.)
+
+*** v1.5.59 developer1 19 Sep 2016 *** Finally (hopefully) nailing the fleeting
+    segfault.
+	I noticed that one of the thresh2 tests in qbash_classifier_modes_check.pl
+	was failing on redsar with the multi-threaded version (only).  Tracing that
+	to use of uninitialised memory (the elements of the candidatesa array) was
+	pretty easy.  Adding a memset() fixed that and seems (250+ runs
+	so far completed) to have fixed the segfault problem.  Unsure why the 
+	uninitialisation problem did not ever manifest itself on my laptop or 
+	in single-threaded mode on redsar, and why it so rarely caused problems
+	even in multi-threaded mode on redsar.
+
+*** v1.5.60 developer1 19 Sep 2016 *** But the new threading model
+	has a memory leak.  Running the 92 million query set showed that
+	QBASHQ memory (as reported by TaskManager) grew from 1.6MB to 58GB 
+	after only a few million queries processes, and the system started 
+	labouring badly.  An attempt to fix this by removing the stuff to do
+	with cleanup groups caused other problems.
+	-- Reverted to the old (v1.5.57) QBASHQ.c.  That avoids the segfault 
+	AND the memory leak.  Build tests passed.
+
+*** v1.5.61 developer1 31 Oct 2016 *** Addressing bugs found by David Maxwell
+	1. QBASHQ:  [Aside] Fix bug in what2show() function l++ should have been l-- 
+	   in stripping trailing spaces
+    2. QBASHQ:  Fix bug in what2show() function, loop to suppress multiple spaces.
+	   problem was that loop termination depended upon what2show + l, but 
+	   l was reduced when spaces were suppressed.
+
+*** v1.5.62 developer1 02 Dec 2016 *** Adding a capability to generate a
+    	JO (Joint Optimisation, aka CAL, Combined Alteration
+    	service) path in cases where no intent word is present but
+	we are confident of the intent.
+	1. QBASHQ:  Add generate_JO_path option and variable.
+	2. classifier.c:code_flags_and_terms_which_matched() modified
+    	to  implement this.
+
+*** v1.5.63 developer1 16 Dec 2016 *** Just adding some Unicode / UTF-8
+        functions and splitting them all into a new shared module.
+	Currently only the initialisation function is called from
+	QBASHI and QBASHQ_LIB.  Other functions are not yet used.
+	    
+*** v1.5.64 developer1 19 Dec 2016 *** Starting the process of becoming
+        more Unicode respectful.
+	1. QBASHI.  Option is now case_fold rather than
+        ascii_case_fold and when true, utf8_lower_case() is called
+	rather than byte-by-byte ASCII folding.
+	2. QBASHI:process_trigger() - Make handling of line-prefix
+	indexing UTF-8 aware.
+	3. unicode.c: get
+
+
+	**TODO** Write test of line prefix indexing for UTF-8 word start.
+	
+*** v1.5.65 developer1 23 Dec 2016 *** Providing command line users with
+       more explanation of errors in command line options, while not
+       changing the output when run from Object Store.
+
+*** v1.5.66 developer1 29 Dec 2016 *** Fixing up implementation of
+    "bigger triggers" in QBASHI.
+       1. Print limits on text indexed to log, with or without
+          bigger_trigger
+       2. When combining bigger_trigger with file-order scanning,
+          the line buffer is too big for the stack.  Malloc it
+	  and free at the end of the function.
+       
+*** v1.5.67 developer1 04 Jan 2017 *** Fixed a couple of bugs in dealing
+    with UTF-8 line prefixes in QBASHI.c:process_trigger() while
+    trying to track down a discrepancy in total word occurrence count
+    v. total of doclen histogram.
+       
+*** v1.5.68 developer1 05 Jan 2017 *** For some reason, ASCII control
+    chars were showing up in vocab.tsv.  It turned out to be because
+    of the presence of characters outside the Basic MultiLingual
+    Plane (BMP).  The functions to convert UTF-8 strings to lower case
+    and to remove accents, just masked the UCS code down to the BMP
+    bits and looked up the unicode tables.  That's obviously
+    incorrect,  and they now just pass through non-BMP characters.
+    
+*** v1.5.69 developer1 17 Jan 2017 *** Overhaul to completely remove
+    use of ASCII lower casing from the entire suite.  Lower casing is
+    now done using the functions in unicode.c.
+    2. Several places where a finite state machine has been
+    implemented inline to split a string (document, query) into an
+    array of words, have been replaced by calls to
+    utf8_split_line_into_null_terminated_words()
+    
+*** v1.5.70 developer1 18 Jan 2017 *** Accent conflation
+    1. QBASHQ - added -x_conflate_accents option, to get the accent
+       removal machinery working, in case we need it.
+    2. QBASHQ - Added a conditional call to utf8_remove_accents() after
+       each call to utf8_lowering_copy()
+    3. QBASHI - Implemented the functionality behind the
+    -conflate_accents option, by making process_a_word() a front-end
+    to process_a_word_internal(). Process_a_word() can now potentially
+    index multiple variants of a word.  If accent conflation is
+    specified, and the word to be indexed has accents, those accents
+    are removed and process_a_word_internal() called a second time.  
+    3. Added quite a few tests to ../scripts/qbash_utf8_check.pl
+
+    **** Note:  With the VS-compiled version of QBASHQ, it isn't
+    **** possible to enter accented words via -pq= because the runtime
+    **** library forces everything to ASCII and shows accented letters
+    **** as some sort of undefined symbol.  If I declared argv as
+    **** TCHAR * then I could read the characters as UTF-16, but then
+    **** I'd have to convert them to UTF-8 and it probably wouldn't
+    **** work with GCC.   I've told VS I want to use multi-byte
+    **** characters, why doesn't it leave the command line bytes
+    **** alone??????!!!!!   
+    
+*** v1.5.71 developer1 02 Feb 2017 *** Show result counts when
+    max_to_show==0  (For emulation of Bhatia et al method.)
+    1. QBASHQ - Extend value range for max_to_show option to include
+       zero
+    2. QBASHQ - Introduce qoenv->report_match_counts_only and
+       qex->full_match_count to implement the special behaviour
+    3. QBASHQ - Don't call possibly_record_match() in this mode,
+       just increment qex->full_match_count
+    4. QBASHQ - when max_to_show == 0, set max_candidates_to_consider
+       to a BILLION_AND_ONE
+    5. QBASHQ - Avoid allocating and freeing results memory when
+       qoenv->report_match_counts_only is set.
+    6. QBASHQ.c - Special output mode in partial query case
+    7. QBASHQ - Special output mode in present_results()
+    
+    **** IMPORTANT CAVEATS ****
+    1. This capability is so far only implemented to cover the
+       case of simple query modes.  Avoid using it in conjunction
+       with classifier modes, relaxation, partial words etc.
+    2. I've noticed some discrepancies between the counts returned in this
+       mode and those returned by 'grep "\b<word>\b"  ...../QBASH.forward.
+       In some cases the counts are equal but in quite a few others
+       they'e not.  E.g.
+       Word	    GREP      QB
+       barack       6117    6117  =
+       obama       71969   71961  >
+       wolf        34048   34051  <
+       quokka         43      43  =
+       aardvark      478     478  =
+       bogans         28      28  =
+       bogan         273     273  =
+       plantain      508     508  = 
+       Hopefully, this is just due to minor differences in
+       tokenization.  
+  
+*** v1.5.72 developer1 20 Feb 2017 *** Avoid indexing documents with
+    zero indexable words.
+    1. QBASHI.c: Add a test for empty document to
+    process_records_in_score_order() and process_records_in_file_order()
+    2. Also mods in process_trigger() to avoid counting zero length
+    docs
+    
+*** v1.5.73 developer1 16 Mar 2017 *** Correct minor glitches in word
+    definition in QBASHI.c:process_trigger() - basically changing to
+    match the code in
+    utf8_split_line_into_null_terminated_words(). The motivation to do
+    this came from the observation that some "words" in QBASH.vocab
+    included spaces.    
+    1. Call utf8_getchar() for any character with a leading one bit.
+       That allows for handling of Windows CP-1252 punctuation.
+    
+*** v1.5.74 developer1 24 Mar 2017 *** Arranging a display_col variant
+    which identifies a doc by it offset in the .forward file
+    Use -display_col=-1.  Output will be Off1234 etc plus score.
+    
+*** v1.5.75 developer1 27 Mar 2017 *** Preliminary implementation of
+    BM25 scoring.
+    1. QBASHQ: Added idf member to saat_control_t.  It's set in setup_word_node()
+    2. QBASHQ: Added N and avdoclen members to query_processing_environment_t.
+       Initialise them to UNDEFINED_DOUBLE
+    3. QBASHI: Write "Total postings", "Number of documents", and
+       "Vocabulary size" lines into the .if  header.
+    4. QBASHQ: Set N and avdoclen in check_if_header()
+    
+*** v1.5.76 developer1 31 Mar 2017 *** Increasing the precision of the
+    average query latency when displayed in query batch mode.
+    (Necessitated a change to a pattern in qbash_utf8_check.pl)
+    
+*** v1.5.77 developer1 02 Apr 2017 *** Fixing a problem in the
+    QBASHQ_lib.c code for checking that repeated query terms
+    are repeated sufficiently often in the document.  The problem
+    arises with x_bigger_trigger indexes, in which word position
+    254 is repeated for all the words from position 254 on.
+    Unfortunately the repetition test relies on word positions.
+    Interim solution is to abandon the repetition testing as soon as a
+    position >= 254 is encountered.  I.e. repetitions will be
+    enforced up to the first 254 words of the document but testing
+    will be abandoned if the right number of repetitions are not
+    found within the firest 255 words.  Not a very satisfying
+    solution.
+    
+*** v1.5.78 developer1 24 Apr 2017 *** Adding basic geospatial
+    capability.  If this capability is being used, the .forward
+    file is assumed to contain the following columns:
+       1. address text
+       2. static score
+       3. object ID
+       4. lat long
+    In this situation, QBASHI indexes special words indicating the
+    tiles in which a point of interest or business is located.
+    Overlapping tiles are used, so that each point is indexed
+    with two latitude special words and two longitude special
+    words.  e.g. x$96 x$97 y$12 y$13.  Latitude special words
+    are indexed at position 250 in the document and longitude ones
+    at position 2511, so that "lat long" phrase query terms can be
+    processed.
+
+    In terms of query matching, there is no change to QBASHQ. If a
+    query contains special words then they are processed just like any
+    other words.  However, in the future we will introduce a scoring
+    system based on calculating the distance between a query location
+    and the candidate location.  Distance scores will be able to be
+    combined with static and textual match scores to come up with an
+    appropriate local search ranking.
+
+    The aim of all the above is to enable sufficiently fast
+    autosuggest for local search applications.  The tile words allow
+    selection of a candidate set sufficiently small to enable
+    low-latency operation of QBASHER partial word matching.
+
+    Changes:
+
+    1. Introduce utils/latlong.[ch] to contain the functions for
+       tile calculation and eventually distance score calculation.
+    2. Add x_geo_tiles option to QBASHI.  It's integer value
+       determines the number of tiles in each of vertical and
+       horizontal directions.  If zero, lat-long capability is
+       disabled.  If lat-long is active, and a document has no
+       valid lat-long data, then special words x$none and y$none will
+       be indexed.  
+       
+*** v1.5.79 developer1 05 May 2017 *** Providing the ability to
+    suppress excess QBASHQ output, when queries come from a
+    batchfile.  This was motivated by the combination of several
+    things:
+	a. Developer2 couldn't get the gcc-compiled version of QBASHQ.exe to
+           run under IIS.
+	b. The VS-2015 compiled version of QBASHQ.exe garbles UTF-8 command
+           line parameters - multibyte characters are received as a
+           single byte.  Therefore submitting a non-English query via
+	   a pq= parameter is not viable -- it's not good even under
+    	   gcc anyway because characters like $ must be quoted.
+	c. Entering queries via a file_query_batch= file generates
+	   a mass of unnecessary output which mucks up Developer2's
+    JavaScript.
+    
+*** v1.5.80 developer1 05 May 2017 *** using geo distances
+    1. utils/latlong.c:greatCircleDistance() and geoScore()
+    2. Added -eta= to set of ranking features (geo distance)
+    3. Added -lat= and -long= to set the origin for a search
+    4. Modified score() to allow for eta and geoScore()
+    
+*** v1.5.81 developer1 08 May 2017 *** Fix a bug in auto_line_prefix
+    and auto_partials.   The normalize_delimiters() call before them
+    removed trailing spaces.
+    
+*** v1.5.82 developer1 08 May 2017 *** Prevent people from setting a
+    zero value for max_line_prefix_postings (when line-prefixes are
+    being used).
+
+*** v1.5.83 developer1 08 May 2017 *** Investigating a segfault during
+    extraction of document features in the score() function.  It
+    turned out to occur when line_prefixes were being indexed.  Each
+    invisible word, such as '>c' added to the count of words in the
+    document, but it shouldn't have.
+    
+*** v1.5.84 developer1 09 May 2017 ***
+    apply_substitution_rules_to_string() used to refuse to perform
+    substitutions if the string contained a square bracket, but that
+    disabled substitutions when disjunctions of geo-tile words were
+    prepended in Local Search autosuggest.   Now, we skip to the last
+    closing square bracket and do the testing / substitution after
+    that.  SHould probably test for " as well as [
+
+*** v1.5.85 developer1 09 May 2017 ***  Tracking down NaNs in
+    distance scoring.  Turned out to be because of some error
+    in my maths which can sometimes cause the calculated straight line
+    distance between two points to exceed the diameter of the earth
+    which used to be impossible.  Inserted a post hoc fixup.
+    
+*** v1.5.86 developer1 10 May 2017 ***  Fix bug introduced in 1.5.84.
+    Problem was that the section of a query up to the last ']' was not
+    copied across.
+
+*** v1.5.87 developer1 12 May 2017 *** Extend the x_geo_tiles mechanism
+    to cater for lat,long,lang in column 4 of the TSV file.  Lang is
+    represented by a special word such as l$DE.  We put that in
+    column 4 rather than column 1 so as to avoid it ever showing up
+    in summaries or responding to partials or rank-only terms, or to
+    participate in the Bloom filter.
+    
+*** v1.5.88 developer1 15 May 2017 *** Removing an efficiency condition
+    in matching of partial words which caused valid answers in the 
+    local search demo to be missed, when the matching record was very
+    short and the query had been expanded by geo-tile and language
+    special words.
+    
+*** v1.5.89 developer1 15 May 2017 *** Allowing the imposition of a
+    threshold on the span length of a match for a query including
+    word-prefixes.  (Again for the local search demo.)  For the
+    query {ormond s}, the span length for "Ormond Street" would be
+    zero (no intervening non-matched words).  However the span length
+    for "Ormond Ct Jerrabomberra 2619 New South Wales Australia" would
+    be 4 -- Ct, Jerrabomberra, 2619, and New are intervening words.
+    1. New QBASHQ option: -max_span_length.
+    
+*** v1.5.90 developer1 17 May 2017 *** Various improvements:
+    1. Deal with a serious problem with utf8_getchar() - If we do the
+    translation from CP-1252 characters to Unicode within a
+    copy-in-place scenario there is an inevitable length
+    increase.  This can cause infinite looping in
+    e.g. utf8_lower_case(). Added a BOOL param.
+    2. Removed qbashq-lib/UTF8.[ch] - not used, superceded
+    3. Removed some code in qbashq-lib/classification.c which
+    had long ago been superceded by utf8_split_string_into_words()
+    4. Changed the definition of duplicate_handling to avoid excessive
+    collapse of the results set.  The previous behaviour (compare each
+    result in the set of max_to_show with all the previous ones) can
+    potentially result in only one result displayed. That checking is
+    now only done if duplicate_handling == 2.  When duplicate_handling
+    == 1, a duplicate check between adjacent items in the score
+    ranking is performed in rerank_and_record().  Provided
+    max_candidates is higher than max_to_show, this may solve the
+    collapse problem.  duplicate_handling==2 causes both types of
+    checks to be performed.
+    5. Had to modify qbash_sanity_check.pl to set duplicate_handling=2
+    6. Added -theta= coefficient to allow weighting of the intervening
+    words feature.  *** Only when query involves one or more partials,
+    at this stage ***
+    
+*** v1.5.91 developer1 19 May 2017 *** Changes to adapt to new
+    geo-tiling method used in utils/latlong.c.
+    1. Six words are now indexed rather than four
+    2. The option is now -x_geo_tile_width rather than -x_geo_tiles
+    and it's value is a float rather than an int
+    
+*** v1.5.92 developer1 21 May 2017 *** Implement the ability to
+    filter by geo-radius
+    1. QBASHQ - new option -geo_filter_radius
+    2. Updated ../scripts/qbash_geo_tiles_check.pl
+    
+*** v1.5.93 developer1 21 May 2017 *** When geo-indexing, allow for
+    bigger tiles as well.
+    1. QBASHI option - -x_geo_big_tile_factor:  When non-zero also
+    index tiles which are this factor bigger than the normal ones.
+    
+*** v1.5.94 developer1 26 June 2017 *** Remove synthetic corpus stuff
+    from QBASHI in the interests of greater maintainability.
+    
+*** v1.5.95 developer1 12 July 2017 *** Implementing support for
+    multi-queries.
+    1. Replace handle_query_plus_options() with handle_multi_query()
+    2. Change present_results() to expect combined rather than
+       separate queries + options.
+    3. Change -max_to_show and -max_candidates to be immutable options
+       so that we can allocate storage once only per multi-query.
+       (Immutable within a multi-query would be better.)
+    4. Define ASCII_RS (0x1E) as an additional record separator.
+    5. Define find_nth_occurrence_in_record() in utility_nodeps.h
+    6. Change one or two of the build tests to accomodate change 3
+       above
+    7. Teeth pulling to fix all the damage caused by above changes.
+       Thank goodness for the build tests.
+    8. Plumbing through the query weight to handle_one_query(),
+       process_query() and rerank_and_record().
+    9. Ditto for classifier()
+   10. New build test: qbash_multi_query_check.pl
+    
+*** v1.5.96 developer1 12 July 2017 *** RHS of substitution rules must
+    be lower-cased otherwise modified query can't match anything.
+    1. shared/substitutions.c:load_substitution_rules() - replace
+       memcpy() with utf8_lowering_copy()
+    2. Updated
+    ../QBASHER/indexes/AS_top500k/QBASH.substitution_rules_EN to
+       include uppercase rules
+    3. Updated ../scripts/qbash_substitution_rules_check.pl to
+       test the upper case rule.  (It failed before the change in
+       1 above.
+
+*** v1.5.97 developer1 13 July 2017 *** Introduction of a candidate
+       generation query - to allow a shorter query for candidate
+       generation while retaining the query_as_processed for
+       scoring.
+    1. Add candidate_generation_query, cg_qterms, and cg_qwd_count
+       to the book_keeping structure
+    2. Define create_candidate_generation_query(qoenv, qex) -- As
+       an interim measure just copy qterms over to cg_qterms
+       and qwd_cnt to cg_qwd_cnt
+    3. Call saat_setup() with cg_qterms and cg_qwd_count
+    4. Change defn of saat_relaxed_and() to only pass qex and not
+       a bunch of individual members.  Make it use the cg_ versions
+       of qwd_cnt and qterms.  (Passes all the GCC LITE build tests)
+    5. Change defn of possibly_record_candidate() in similar fashion.
+       (Passes all the GCC LITE build tests)
+    6. Split create_candidate_generation_query(qoenv, qex) off into
+       separate query_shortening.[ch] module
+    7. Introduce query_shortening_threshold= parameter
+    8. Implement a query shortening algorithm
+    9. Populate qex->candidate_generation_query and show it when
+       display_parsed_query is set.
+   10. Change the system for setting term_matched bits (in
+       classification_score()) so that they correspond to the
+       query_as_processed rather than to the
+       candidate_generation_query .
+   11. Implement ../scripts/qbash_query_shortening_check.pl
+   
+*** v1.5.98 developer1 14 July 2017 *** Query shortening algo in the
+    previous version didn't work the way I wanted.  Rewrote it.
+    +  Fixes to a couple of recent build tests
+    +  Annoyance with qsort_r() v. qsort_s() in query_shortening.c
+    
+*** v1.5.99 developer1 19 July 2017 *** Reviewing exit()s which
+    might be called during query processor.
+    1. Adding comments to indicate the ones which are indexer only
+       or called only in debugging mode
+    2. Changed several malloc calls to cmalloc() to avoid repeated tests for
+       malloc() fails
+    3. In qbashq-lib/classification.c:classifier_score() removed the
+       exit call when dwds_cnt values disagreed.  (This actually
+       happened when using QBASHQ 1.5.98 on a very old 1.5 index.)
+       Now we continue on.
+     
+*** v1.5.100 developer1 24 July 2017 *** Change the IDF for a
+    non-occurring term from a constant 3.0 to log(N), the same
+    as a term which occurs only once.  For a large corpus, a
+    value of 3 doesn't seem to reflect the desired importance of a
+    missing non-occurring term in classifier modes which use
+    IDFs.
+     
+*** v1.5.101 developer1 17 August 2017 *** Removing superfluous
+    options in the interests of maintainability.
+    QBASHQ:
+    1. Remove allow_prefixes option
+    2. Remove drop_unknown_words option
+    3. Remove special_matching modes
+    4. Remove saat_and() function and code which calls it.
+    5. Modified build tests which made use of deleted options.
+
+*** v1.5.102 developer1 17 August 2017 *** Continuing the removal.
+    These may be more complex ...
+    QBASHQ
+    1. Remove relaxation_mode option and code which supports it.
+    2. Remove sub_queries_to_include option and code which supports it.
+    3. Remove sub_queries_to_exclude option and code which supports
+       it.
+    4. Also removed last vestiges of exception_strings (which have
+       never been used in QBASHER applications.)
+    5. Modified build tests which made use of deleted options (lots!).
+    6. Removed add_relaxtion_options_to_test_queries from GIT
+    7. Qsplitter modified to print message requiring code modification
+       to remove dependence on sub_query_includes
+  
+*** v1.5.103 developer1 22 August 2017 *** Adding street number
+    processing capabilities
+    QBASHQ
+    1. Add utils/street_addresses.[ch]
+    2. Add street_number_processing option and variables.
+    3. Add street_specs_col option and variables
+    4. Implement street number validity checking
+    
+*** v1.5.104 developer1 24 August 2017 ***  Adding abililty to
+    remove +4 part of ZIP5+4.  E.g. 90210-3456 -> 90210. Also
+    allow for house numbers starting with #
+    QBASHQ
+    1. Add strip_zips function to utils/street_addresses.[ch]
+    
+*** v1.5.105 developer1 24 August 2017 ***  Expanding the definition
+    of the unicode_ispunct macro to include a few more punctuation
+    ranges.  *** Still not complete.  Should probably read the
+    UnicodeData.txt file and declare all the letters and digits
+    (only) to be indexable.
+    
+*** v1.5.106 developer1 24 August 2017 *** Adding epsilon more
+    sophistication to the street address stuff.
+    1. Stripping "apt BLAH" and "apartment BLAH" as well as suite BLAH
+       and unit BLAH.
+    2. Dealing with a range of house numbers, e.g. 40-60 BLAH street.
+    3. Allowing for street number suffixes such as bis, and A or B
+    
+*** v1.5.107 developer1 28 August 2017 *** Fixing a bug affecting
+    queries containing a word X which is repeated within a subsequent
+    disjunction.
+    QBASHQ
+    1. Fixed bugs in SAAT_DISJUNCTION branch of
+       saat_advance_within_doc()
+    2. Beefed up qbash_disjunction_check.pl
+       *** Note: Still won't work when it's a phrase appearing both as a
+       top level term in the query and within a disjunction.
+       
+*** v1.5.108 developer1 28 August 2017 *** Trying to extend the
+    improvement in 1.5.107 to phrases within disjunctions.
+    QBASHQ
+    1. Solved using a peek-ahead function for phrases
+    *** Note we still don't have a test for repeated phrases
+    outside disjunctions.
+    2. Beefed up qbash_disjunction_check.pl
+    
+*** v1.5.109 developer1 29 August 2017 *** Addressing the problem
+    with repeated phrases outside disjunctions.
+    QBASHQ
+    1. Used leaf_peek_ahead_in_same_doc()
+    2. Beefed up qbash_disjunction_check.pl	
+    *** Note we still don't have code to deal with disjunctions
+    in phrases -- Where will all this end??
+    
+*** v1.5.110 developer1 30 August 2017 *** Addressing the problem
+    with repeated disjunctions within phrases.
+    QBASHQ
+    1. Used disjunction_peek_ahead_in_same_doc()
+    2. Again beefed up qbash_disjunction_check.pl
+    
+*** v1.5.111 developer1 30 August 2017 *** Trivial change to allow
+    for an 'n' in front of a street number.
+    1. In utils/street_addresses.c
+    2. Added a couple of tests to qbash_street_addresses.pl
+    
+*** v1.5.112 developer1 10 October 2017 *** Allowing results from
+    multiple query variants to co-exist within a result set.
+    Up until now, the result counters were zeroed prior to execution
+    of second and subsequent queries.
+    1. Added a candidates_recorded array to the book_keeping structure
+    2. Modified load and unload bookkeeping to malloc and free it.
+     -- Actually, there were a lot of changes required to achieve
+     -- this goal
+    3. Added a couple of tests to qbash_multi_query_check.pl
+    4. All the LITE tests pass.
+
+*** v1.5.113 developer1 18 October 2017 *** Triggering an Easter Egg
+    1. Added a simple regex matcher re_match() to substitutions.c
+    2. Defined an EASTER_EGG_PATTERN (currently case-insensitive
+       "^gonebut notforgotten$")
+    3. Called re_match() at the head of handle_one_query to test
+       query string for EASTER_EGG_PATTERN.  If test succeeds, a
+       single result is returned, giving QBASHER version number and
+       number of documents in the index.
+       
+*** v1.5.114 developer1 24 October 2017 ***  Implementing a timeout
+       based on elapsed msec.
+    1. Added -timeout_msec option
+    2. Added start_time member to book_keeping_for_one_query struct
+    3. Added a test for timeout in relaxed.c:saat_relaxed_and() -
+       same place and conditions as when timeout_kops is tested.
+    4. Added a build test qbash_timeout_check.pl
+    
+*** v1.5.115-OS developer1 07 November 2017 ***  Open Source candidate
+    1. Modifying all the build tests to allow them to be open-sourced
+       uncovered a few bugs.
+    2. Improve implementation of multi_queries.
+    
+*** v1.5.116-OS developer1 16 November 2017 ***  Reinstating the ability
+    to apply a query label to each result in a batch run.  (It was
+    broken by the introduction of support for multi_queries.) Now the
+    label must be given at the end of the query line, after an ASCII
+    GS character (0x1D).
+    1. Various changes to QBASHQ.c and QBASHQ_lib.c to achieve the
+    above.
+    2. Added a qbash_batch_query_labels_check.pl script.
+    
+*** v1.5.117-OS developer1 21 Nov 2017 *** Arranging to output some
+    codes to indicate what type of query shortening occurred.
+    
+*** v1.5.118-OS developer1 23 Nov 2017 *** Implementation of a new way
+    of handling queries containing repeated top-level words.  SAAT
+    blocks of type SAAT_WORD now have a repetition_count member.
+    Saat_skipto() calls a leaf_peek_tf() function to check that
+    a candidate containing at least one occurrence of a word, contains
+    at least the required number.  Similarly, saat_setup() ensures
+    that if the first posting contains too few occurrences,
+    saat_skipto() is called to advance to one which contains at least
+    the required number.
+
+      * All build tests passed.
+      * compare_results_from_different_exes.pl used to check that
+        results are identical to those of previous version.
+      * On lyrics queries with repeated words, average latency
+        reduced by a factor of nearly 5 and maximum latency by
+	a much larger factor.
+       
+*** v1.5.119-OS developer1 04 Dec 2017 *** Allowing display of up to
+    three columns (without using display_col=0).  The value of
+    display_col is repeatedly taken modulo 100 to determine which
+    is the column to display.  Then, if display_col is
+    still non zero after integer division by 100, the process is
+    repeated.  Example: display_col=110204 will display column 11,
+    then column 2, then column four.  Multiple columns displayed in
+    this way are separated by " +++ ".
+    
+*** v1.5.120-OS developer1 05 Dec 2017 *** Fixing some bugs in the
+    string substitution logic.
+
+*** v1.5.121-OS developer1 12 Dec 2017 *** Removing the "repeated terms"
+    heuristic from query_shortening.  Now that we have an efficient
+    way of handling repeated terms, it's better to leave them in.
+    Query_shortening_threshold is now applied to the number of
+    distinct terms.
+    
+*** v1.5.122-OS developer1 13 Dec 2017 *** Fixing a small bug which
+    appended an asterisk to queries.  QBASHQ_lib.c:
+    replace_controls_in_line(). It was replacing newlines with '*'
+    
+*** v1.5.123-OS developer1 02 Jan 2017 *** Adapting to incompatible
+    MacOS definition of qsort_r() (different order of parameters both
+    in qsort_r() call and in call to comparison function.
