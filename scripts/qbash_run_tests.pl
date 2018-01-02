@@ -23,13 +23,14 @@ $use_gcc_executables = 0;
 $lite_tests = 0;
 
 print "
-qbash_run_tests.pl allows for optional arguments which may be 
+Usage: qbash_run_tests.pl [GCC] [RI | LITE | BASIC | FULL] [ithreads=<int>] [qthreads=<int>]
 
     'GCC', meaning test with the GCC-built executables (no multi-threading, no C#),
     'LITE', meaning run a reduced set of tests (a quick check)
     'BASIC', meaning run the LITE tests plus some longer ones,
     'FULL', meaning run all tests including ones with very large query sets, or
     'RI', meaning re-index the collections and run the FULL set of tests.
+          (If the .forward files are bzipped, they will be unbzipped first.)
     'ithreads=<int>', meaning run indexing in <int> parallel threads.
     'qthreads=<int>', meaning run tests in <int> parallel threads.
 
