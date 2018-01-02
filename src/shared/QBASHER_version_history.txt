@@ -1969,3 +1969,6 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     appended an asterisk to queries.  QBASHQ_lib.c:
     replace_controls_in_line(). It was replacing newlines with '*'
     
+*** v1.5.123-OS developer1 02 Jan 2017 *** Adapting to incompatible
+    MacOS definition of qsort_r() (different order of parameters both
+    in qsort_r() call and in call to comparison function.

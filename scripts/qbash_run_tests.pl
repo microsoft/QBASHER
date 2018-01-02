@@ -110,7 +110,7 @@ if ($use_gcc_executables) {
 
 foreach $ix (@indexes) {
     die "Error: Index for $ix not found.  Try adding the RI (reindex) option and re-running your command.\n"
-	unless -r "$ix/QBASH.if";
+	unless -r "$idxdir/$ix/QBASH.if";
 }
 
 
