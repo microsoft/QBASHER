@@ -2762,28 +2762,26 @@ static int process_query(query_processing_environment_t *qoenv, book_keeping_for
       return 0;   // ---------------------------------------------------------->
     }
 
-    if (qex->candidates_recorded != NULL) {
-      if (qoenv->classifier_mode > 0) {
-	// ---- we're classifying ----
-	classifier(qoenv, qex, forward, doctable, fsz, score_multiplier);
-	// The results of classifier() are returned in the following elements of qex:
-	//  docnum_t *tl_docids;    - The docid of each result
-	//  u_char **tl_suggestions; - Copies of the relevant document text in malloced memory
-	//  double *tl_scores;    - Scores associated with the each result
-	//  int tl_returned;  - A count of the number or results returned.
+    if (qoenv->classifier_mode > 0) {
+      // ---- we're classifying ----
+      classifier(qoenv, qex, forward, doctable, fsz, score_multiplier);
+      // The results of classifier() are returned in the following elements of qex:
+      //  docnum_t *tl_docids;    - The docid of each result
+      //  u_char **tl_suggestions; - Copies of the relevant document text in malloced memory
+      //  double *tl_scores;    - Scores associated with the each result
+      //  int tl_returned;  - A count of the number or results returned.
 
-      } else {
-	// ---- normal operations ----
+    } else {
+      // ---- normal operations ----
 	
-	rerank_and_record(qoenv, qex, forward, doctable, fsz, score_multiplier,
-			  penalty_multiplier_for_partial_matches);
-	// The results of rerank_and_record() are returned in the following elements of qex:
-	//  docnum_t *tl_docids;    - The docid of each result
-	//  u_char **tl_suggestions; - Copies of the relevant document text in malloced memory in descending score order
-	//  double *tl_scores;  - Scores associated with the each result
-	//  int tl_returned;    - A count of the number of results returned.
+      rerank_and_record(qoenv, qex, forward, doctable, fsz, score_multiplier,
+			penalty_multiplier_for_partial_matches);
+      // The results of rerank_and_record() are returned in the following elements of qex:
+      //  docnum_t *tl_docids;    - The docid of each result
+      //  u_char **tl_suggestions; - Copies of the relevant document text in malloced memory in descending score order
+      //  double *tl_scores;  - Scores associated with the each result
+      //  int tl_returned;    - A count of the number of results returned.
 
-      }
     }
 
     if (qoenv->debug >= 1) printf("process_query() --> tl_returned = %d\n", qex->tl_returned);
