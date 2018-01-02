@@ -108,9 +108,12 @@ if ($use_gcc_executables) {
 
 @indexes = ("wikipedia_titles_500k", "wikipedia_titles_5M", "wikipedia_titles");
 
-foreach $ix (@indexes) {
-    die "Error: Index for $ix not found.  Try adding the RI (reindex) option and re-running your command.\n"
-	unless -r "$idxdir/$ix/QBASH.if";
+if (! $reindex) {
+    # If we haven't been asked to reindex, check that indexes are present
+    foreach $ix (@indexes) {
+	die "Error: $idxdir/$ix/QBASH.if not found.  Try adding the RI (reindex) option and re-running your command.\n"
+	    unless -r "$idxdir/$ix/QBASH.if";
+    }
 }
 
 
