@@ -1,7 +1,7 @@
 Notes on QBASHER test-suite (scripts directory)
 -----------------------------------------------
 
-13 Dec 2017
+03 Jan 2018
 
 After making any changes to the QBASHER code, please make sure to run
 the test suite to ensure that you haven't: caused collateral damage to
@@ -19,31 +19,30 @@ A. RUNNING THE TEST SUITE FOR THE FIRST TIME (OR AFTER CHANGING THE INDEXER)
                                       # using gcc/make
 
 The RI option causes the data sets in ../test_data to be rebuilt, and
-then runs the full set of tests. The 'perl' should be the path to your
-perl5 interpreter, or just perl if it's in your path.
+then runs the basic set of tests. The 'perl' should be the path to your
+perl5 interpreter, or just perl if it's in your path. If the actual
+data is bzipped (as is the case when first cloned from the github
+repository) then the RI option causes the QBASH.forward.bz2
+files to be uncompressed as QBASH.forward.   It is  assumed that
+there is a \texttt{bunzip2} executable in your path.
 
 
+B. SUBSEQUENT RUNS OF THE TEST SUITE
+------------------------------------
 
-B. NOTES ON USING GCC.
-----------------------
-Unfortunately, the GCC-built version does not yet support
-multi-threaded operation.  Some conditionally compiled pthreads
-code is present but hasn't been debugged. (12 Dec 2017).  This means
-that processing large query batches with the GCC version takes very
-much longer. Tests which compare output from single and multi-threaded
-running are not run, and nor is the test using a C# front-end.
+If the indexer hasn't changed, you can leave off the RI option in the
+commands shown in Section A above.  You can also choose which test
+scripts are run and how they are run using the following options:
 
 
-
-C. OPTIONS TO QBASH_RUN_TESTS.PL
---------------------------------
-#qbash_run_tests.pl allows for optional arguments which may be 
+#Usage: qbash_run_tests.pl [GCC] [RI | LITE | BASIC | FULL] [ithreads=<int>] [qthreads=<int>]
 #
 #    'GCC', meaning test with the GCC-built executables (no multi-threading, no C#),
 #    'LITE', meaning run a reduced set of tests (a quick check)
 #    'BASIC', meaning run the LITE tests plus some longer ones,
 #    'FULL', meaning run all tests including ones with very large query sets, or
-#    'RI', meaning re-index the collections and run the FULL set of tests.
+#    'RI', meaning re-index the collections and run the BASIC set of tests.
+#          (If the .forward files are bzipped, they will be unbzipped first.)
 #    'ithreads=<int>', meaning run indexing in <int> parallel threads.
 #    'qthreads=<int>', meaning run tests in <int> parallel threads.
 #
@@ -58,7 +57,7 @@ RAM configuration, you can run the build tests quite a bit more
 quickly with these options.
 
 
-D. RUNNING INDIVIDUAL TESTS
+C. RUNNING INDIVIDUAL TESTS
 ---------------------------
 
 All the scripts in the test suite are named
@@ -74,6 +73,17 @@ need '../src/QBASHQ.exe'.
 If you specify -fail_fast, then the script will exit as soon as a test
 fails and give you the command string which failed and the results
 from running it.
+
+
+D. NOTES ON USING GCC.
+----------------------
+Unfortunately, the GCC-built version does not yet support
+multi-threaded operation.  Some conditionally compiled pthreads
+code is present but hasn't been debugged. (12 Dec 2017).  This means
+that processing large query batches with the GCC version takes very
+much longer. Tests which compare output from single and multi-threaded
+running are not run, and nor is the test using a C# front-end.
+
 
 
 E. MONITORING LATENCY AND THROUGHPUT
