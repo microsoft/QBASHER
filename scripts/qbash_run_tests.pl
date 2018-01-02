@@ -78,7 +78,7 @@ foreach $a (@ARGV) {
 if ($use_gcc_executables) {
     $binDir = "../src";
     $vocab_lister = "../src/QBASH_vocab_lister.exe";
-    print "\nUsing GCC executables\n\n";
+    print "\n ... Will try to use GCC-built executables\n\n";
 } else {
     $config = "Release";
     $binDir = "../src/visual_studio/x64/${config}";
@@ -92,9 +92,26 @@ if ($use_gcc_executables) {
 	chmod 0755, "$binDir/x64/${config}/QBASHQsharpNative.exe";
     }	   
     $vocab_lister = "../src/visual_studio/x64/${config}/QBASH_vocab_lister.exe";
+    print "\n ... Will try to use VS2015-built executables\n\n";
 }
 
+
+# Make sure the executables we need are present and executable.
+
+    die "Error: Can't find or can't run $binDir/QBASHQ.exe\n"
+	unless -e "$binDir/QBASHQ.exe";
+    die "Error: Can't find or can't run $binDir/QBASHI.exe\n"
+	unless -e "$binDir/QBASHI.exe";   
+    die "Error: Can't find or can't run $vocab_lister\n"
+	unless -e "$vocab_lister";   
+
+
 @indexes = ("wikipedia_titles_500k", "wikipedia_titles_5M", "wikipedia_titles");
+
+foreach $ix (@indexes) {
+    die "Error: Index for $ix not found.  Try adding the RI (reindex) option and re-running your command.\n"
+	unless -r "$ix/QBASH.if";
+}
 
 
 if ($lite_tests) {
@@ -269,9 +286,14 @@ if ($qthreads > 1) {
 }
 
 if ($global_abort) {
-    print "\n\n --------  Blast! At least one test failed. ---------\n\n";
+    print "\n\n --------  Blast! At least one test script failed. ---------\n\n";
+    print "Suggestion for diagnosing the problem:  Run the test script which failed,\n";
+    print "adding the option \"-fail_fast\".  This will cause the test to stop as soon\n";
+    print "as an error is detected, and to print the QBASHER command run and the output\n";
+    print "it produced.  You may then want to rerun the command with -debug=2 to trace\n";
+    print "what went wrong.\n";
 } else {
-    print "\n\n --------  It's our lucky day.  All tests passed. ---------\n\n";
+    print "\n\n --------  It's our lucky day.  All test scripts passed. ---------\n\n";
 }
 
 
