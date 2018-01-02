@@ -11,7 +11,7 @@
 
 \title{Introduction to QBASHER\\
   \large ~\\
-  Version 1.5.121-OS}
+  Version 1.5.123-OS}
 \author{Microsoft}
 
 \begin{document}
@@ -27,7 +27,8 @@ classification, and simple retrieval.
 
 QBASHER is designed to handle many billions of records in a single
 index and to achieve high query processing rates and low latency query
-responses.  Data to be indexed is expected to be in TSV format with a
+responses.  Data to be indexed is expected to be in TSV
+(tab-separated-value) format with a
 minimum of two columns.  Column one contains the document text, column
 two is expected to contain a numeric quantity representing the static
 score (popularity, authority, etc) of the document. Extra columns
@@ -37,7 +38,7 @@ display-oriented form of the document.   In normal operation, QBASHER
 internally reorders documents into order of descending static score,
 after normalising the scores into the range $0-1$.  During retrieval,
 candidates are ranked by a linear combination $\alpha - \theta$ of
-features including the static score.  One of the features is a BM25
+features, including the static score.  One of the features is a BM25
 score. In a query classification scenario, different features are
 used: $\omega - \chi$.
 
@@ -104,9 +105,11 @@ git clone "https://github.com/Microsoft/QBASHER"
 
 \subsection{Prerequisites}
 
-To use the system you need to build executables from their sources.
-For this you need to have installed either \texttt{gcc} and
-\texttt{make} or Microsoft Visual Studio 2015.
+To use the system you need first to build executables from their sources.
+For this you need to have installed either \texttt{gcc}\footnote{The
+  MacOS version of \texttt{gcc} which is actually \texttt{Clang}, see
+  \url{https://clang.llvm.org/comparison.html} also works.}  and
+\texttt{make} or Microsoft Visual Studio 2015.  
 
 To use the system you will also need to have \texttt{perl 5}
 installed.  Finally, to re-generate the PDF of this document you will
@@ -128,14 +131,11 @@ cleanest' -- it avoids the rebuilding of the PCRE2 libraries.
 
 Libraries and executables will appear in the QBASHER/src directory.
 
-\noindent To run the build tests:
-
-\begin{verbatim}
-cd QBASHER/scripts    # Change to the src directory of the cloned repository
-./qbash\_run\_tests.pl GCC
-\end{verbatim}
-
-See also QBASHER/scripts/README.txt and QBASHER/test\_queries/README.txt
+After successfully building the libraries and executables, you should
+run the test suite, following the instructions in
+\texttt{QBASHER/scripts/README.txt}. See
+\texttt{QBASHER/test\_queries/README.txt} for information about the
+sets of test queries used by the test suite.
 
 
 \subsection{Building with Visual Studio 2015}
@@ -163,14 +163,10 @@ from the \texttt{Build} menu.
 QBASHER/src/visual_studio/x64/Release/
 \end{verbatim}
 
-\noindent You can then run the build test scripts:
-\begin{verbatim}
-cd QBASHER/scripts    
-perl ./qbash\_run\_tests.pl   
-\end{verbatim}
-
-Where 'perl' is your favourite perl interpreter -- just perl if the
-interpreter is in your path.
+You should then run the test suite, following the instructions in
+\texttt{QBASHER/scripts/README.txt}. See
+\texttt{QBASHER/test\_queries/README.txt} for information about the
+sets of test queries used by the test suite.
 
 \section{Help on options}
 If you run any of the .EXE files from the command line, without
@@ -180,7 +176,7 @@ Options whose names start with ``x\_'' are considered experimental and
 are more likely to be removed or changed in future releases.    At the
 time of writing (12 Dec 2017) there are some such options which have
 proved their worth and which have been thoroughly tested, but which
-have not had the 'x\_' dropped.
+have not yet had the 'x\_' dropped.
 
 
 \section{Examples of command-line usage}
@@ -280,5 +276,23 @@ results will not in general correspond to the order of queries in the
 query batch.   In the second example, the \texttt{query\_streams}
 option runs the queries single-threaded and presents results in the
 same order as the queries appear in the file.
+
+\section{Committing changes to \projectName}
+
+Before committing changes, please make sure that at least the BASIC
+tests in the test suite pass.  Then you can use \texttt{make git} to
+issue all the necessary 'git add' commands to ensure that all the
+necessary items (and none of the derivative items) are added to the
+commit list.   Then do 
+\begin{verbatim}
+git commit -m "synopsis of your brilliant changes"
+git push <options>
+\end{verbatim}
+
+The 'git commit' will commit your changes to your local repository.
+The 'git push' can be used to contribute your changes to the github
+project repository.  If you are an authorized contributor 'git push'
+with no arguments will do the trick.   At this stage, I'm not clear on
+what is required to become an authorized non-Microsoft contributor.
 
 \end{document}
