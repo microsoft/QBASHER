@@ -23,11 +23,11 @@ static int all_digits(u_char *wd) {
 }
 
 
-#ifdef WIN64  // Annoying that Windows and GNU don't agree about how to
-              // make a reentrant comparison function for qsort_[rs]()
-static int win_cmp_freak(void *context, const void *ip, const void *jp) {
+#if defined(WIN64) || defined(__APPLE__)  // Annoying that Windows, MacOS and GNU don't agree about how to
+                                          // make a reentrant comparison function for qsort_[rs]()
+static int winmac_cmp_freak(void *context, const void *ip, const void *jp) {
   // Sort into order of descending frequency
-  // Windows version
+  // Windows version -- different name to Linux
   int *i = (int *)ip, *j = (int *)jp;
   u_ll *freaks = (u_ll *)context;
   if (freaks[*i] < freaks[*j]) return 1;
@@ -128,7 +128,6 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
 	vocabfile_entry_unpacker(vocab_entry, MAX_WD_LEN + 1, &occurrence_count, &ig1, &ig2);
 	freaks[u] = occurrence_count;
       }
-
     }
 
     if (distinct_terms > qoenv->query_shortening_threshold) {
@@ -147,14 +146,18 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
       }
     }
 
-      
+
     if (distinct_terms > qoenv->query_shortening_threshold) {
       //    4. Remove the words with the highest occurrence frequency
 #ifdef WIN64
-      qsort_s(freaki, qex->qwd_cnt, sizeof(int), win_cmp_freak, (void *)freaks);
-#else
+      // Annoying that Windows, MacOS and Linux don't agree on how to do reentrant qsort.
+      qsort_s(freaki, qex->qwd_cnt, sizeof(int), winmac_cmp_freak, (void *)freaks);
+#elif defined(__APPLE__)
+      qsort_r(freaki, qex->qwd_cnt, sizeof(int), (void *)freaks, winmac_cmp_freak);
+#else      
       qsort_r(freaki, qex->qwd_cnt, sizeof(int), cmp_freak, (void *)freaks);
 #endif
+       
       for (u = 0; u < qex->qwd_cnt; u++) {
 	v = freaki[u];
 	if (zap[v]) continue;  // Already zapped
@@ -167,7 +170,7 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
       }
     }
  
-
+ 
     // Set up the shortened (candidate generation query) by copying over
     // all the terms that haven't been zapped.  Also create qex->candidate_generation_query
     // by concatenating all the unzapped terms (with spaces).
@@ -185,14 +188,14 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
     free(zap);
   } // end of shortening branch of else
 
-
   w = qex->candidate_generation_query;
   for (t = 0; t < qex->cg_qwd_cnt; t++) {
     r = qex->cg_qterms[t];
     while (*r) *w++ = *r++;
     *w++ = ' ';
   }
-  
+
+
   *(--w) = 0;  // remove last space and null terminate
   if (explain) printf("     Shortened query {%s} has %d terms\n",
 		      qex->candidate_generation_query, qex->cg_qwd_cnt);

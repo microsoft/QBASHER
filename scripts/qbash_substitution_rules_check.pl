@@ -105,14 +105,8 @@ $err_cnt += check_topk_results("macdonald's", "-use_substitutions=TRUE -display_
 			      "Ramsay MacDonald"
         );
 
-$err_cnt += check_topk_results("\\\"macdonald s\\\"", "-use_substitutions=TRUE -display_col=1", 0, 3,
-
-#\\"  The escaped quotes in the prev line mess up emacs pretty printing :-(  This fixes it
-
-			      "John A. MacDonald",
-			      "John A. Macdonald",
-			      "Ramsay MacDonald"
-        );
+# QBASHQ avoids substitutions within phrases.
+$err_cnt += check_count("\\\"macdonald s\\\"", "-use_substitutions=TRUE -display_col=1", 0, 0);
 
 
 #Note that we changed classifier_mode in late August 2016 to strip all punctuation.  That dooms to failure
@@ -237,6 +231,52 @@ sub check_topk_results {
 		return 1;
 	}
 	return 0;
+}
+
+
+sub check_count {
+        my $pq = shift;
+        my $options = shift;
+        my $expected = shift;
+        my $show_rslts = shift;
+
+        # VS does terrible things to non-ASCII command line arguments, so
+        # we need to put the query in a file and read that as a batch.
+        die "Can't open temporary query file\n"
+            unless open QF, ">utf8.q";
+        print QF "$pq\n";
+        close QF;
+        
+        #my $cmd = "$qp index_dir=$ix $base_opts -pq=\"$pq\" $options";
+        my $cmd = "$qp index_dir=$ix $base_opts -file_query_batch=utf8.q -x_batch_testing=TRUE $options";
+        print $cmd, "{$pq}";
+        my $rslts = `$cmd`;
+        die "Command '$cmd' failed with code $?\n"
+                if ($?);
+        print $rslts if $show_rslts;
+        my $count = 0;
+        my %dup_check;
+        # The pattern on the next line has to match output (if any) from experimental_show()
+        # in QBASHQ_lib.c -- maybe somewhere else in classifier mode???
+        while ($rslts =~ /Query:\t[^\t]*\t[^\t]*\t([^\t]+).*?\t([01]\.[0-9]+)\s*\n/sg) {
+                 die "\n\n$rslts\nResults for '$cmd' contain duplicate suggestions\n"
+                        if defined($dup_check{$1});
+                 $dup_check{$1} = 1;
+                 print "\n\n  ----> Result matched was '$1'.  Score was $2\n";
+                $count++;
+        }
+        print sprintf(" - %4d %4d - ", $expected, $count);
+        if ($count == $expected) {print " [OK]\n";}
+        else {
+                print " [FAIL]\n";
+                if ($fail_fast) {
+                        my $rslts = `$cmd`;
+                        print $rslts;
+                        exit(1);
+                }
+                return 1;
+        }
+        return 0;
 }
 
 
