@@ -350,7 +350,7 @@ int multisub(const pcre2_code *regex, PCRE2_SPTR sin, PCRE2_SIZE sinlen, PCRE2_S
   while (*section_start) {
     // Look for an operator
     q = section_start;
-    while (*q && *q != '[' && '"') q++;
+    while (*q && *q != '[' && *q != '"') q++;
     seclen = q - section_start;
     if (seclen > 0) {
       PCRE2_SIZE lobufleft = obuf_end - obufupto + 1;
