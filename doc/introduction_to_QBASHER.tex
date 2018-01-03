@@ -126,6 +126,12 @@ make cleanest
 make
 \end{verbatim}
 
+On some Linux distributions, you may need to use position independent code
+to compile the PCRE2 libraries correctly. If this is the case, you can use:
+\begin{verbatim}
+make fPIC=1
+\end{verbatim}
+
 Later, you can save some time by using 'make cleaner' instead of 'make
 cleanest' -- it avoids the rebuilding of the PCRE2 libraries.
 

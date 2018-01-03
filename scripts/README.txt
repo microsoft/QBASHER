@@ -141,3 +141,10 @@ As you can see, the default test-suite run without parallelism took
 540.9 seconds (about 9 minutes) to run on that laptop.  For
 information, when run with FULL under the same conditions the run time
 was 1701.0 sec (about 29 minutes). 
+
+F. A NOTE ON LINUX USAGE
+------------------------
+If you are using Linux, the test case may fail if the perl files are not
+set as executable. That is, run `chmod 755 *.pl` before executing any test
+scripts.
+
