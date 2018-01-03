@@ -8,6 +8,10 @@ CC=/usr/bin/gcc
 CFLAGS=-O3 -std=c11 -m64 -Wall -MP -MD -DNO_THREADS # No need for -fPIC... "All code is position-independent"
 LDLIBS=-lm
 
+ifdef fPIC
+	export fPIC=1
+endif
+
 # For an explanation of automatic variables (e.g.$@, $? and $^) see
 # https://www.gnu.org/software/make/manual/make.html#Automatic-Variables
 #	$@ The file name of the target of a rule
@@ -20,7 +24,7 @@ LDLIBS=-lm
 all: QBASHI.exe libpcre2 libQBASHQ-LIB.a QBASH_vocab_lister.exe TFdistribution_from_TSV.exe QBASHQ.exe generate_fuzz_queries.exe
 
 
-QBASHI.exe: QBASHI/arg_parser.o QBASHI/input_buffer_management.o  QBASHI/QBASHI.o QBASHI/Write_Inverted_File.o utils/dahash.o utils/linked_list.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o utils/dynamic_arrays.o utils/latlong.o 
+QBASHI.exe: qbashi/arg_parser.o qbashi/input_buffer_management.o  qbashi/QBASHI.o qbashi/Write_Inverted_File.o utils/dahash.o utils/linked_list.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o utils/dynamic_arrays.o utils/latlong.o 
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 QBASHQ_OBJECTS=qbashq-lib/QBASHQ_lib.o qbashq-lib/arg_parser.o qbashq-lib/classification.o qbashq-lib/error_explanations.o qbashq-lib/saat.o qbashq-lib/relaxation.o  qbashq-lib/query_shortening.o shared/utility_nodeps.o shared/unicode.o shared/substitutions.o utils/latlong.o utils/street_addresses.o
