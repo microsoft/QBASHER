@@ -11,7 +11,7 @@
 
 \title{Introduction to QBASHER\\
   \large ~\\
-  Version 1.5.123-OS}
+  Version 1.5.124-OS}
 \author{Microsoft}
 
 \begin{document}
@@ -279,13 +279,23 @@ same order as the queries appear in the file.
 
 \section{Committing changes to \projectName}
 
+Please update the QBASHER version number recorded near the head of
+\url{src/shared/QBASHER_common_definitions.h}.  If you change the
+format of the index, increment the \texttt{INDEX\_FORMAT} definition
+in the same place and reset \texttt{QBASHER\_VERSION} to ``.0''.
+
+After updating the version number please append a comment to the tail
+of the file \url{src/shared/QBASHER_version_history.txt}
+detailing what changes you made, and why.  Follow the format of the
+previous entries.
+
 Before committing changes, please make sure that at least the BASIC
 tests in the test suite pass.  Then you can use \texttt{make git} to
 issue all the necessary 'git add' commands to ensure that all the
 necessary items (and none of the derivative items) are added to the
 commit list.   Then do 
 \begin{verbatim}
-git commit -m "synopsis of your brilliant changes"
+git commit -m "new version number and/or synopsis of your brilliant changes"
 git push <options>
 \end{verbatim}
 

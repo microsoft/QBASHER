@@ -130,6 +130,8 @@ void *cmalloc(size_t s, u_char *msg, BOOL verbose);
 
 void error_exit(char *msg);
 
+void putchars(u_char *str, size_t n);
+
 void show_string_upto_nator(u_char *str, u_char nator, int indent);
 
 void show_string_upto_nator_nolf(u_char *str, u_char nator, int indent);

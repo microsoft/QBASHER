@@ -109,7 +109,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
 	return 0;  // ----------------------------------------------------->
       }
     }
-    // We've found the file.  Create it's name, Memory map it, count the lines, then create the mappings.
+    // We've found the file.  Create it's name and memory map it.
     if (debug > 0) printf("Loading substitution rules from %s%s\n", tfn, katter);
     strcpy(tfn + dirlen, katter);
 
@@ -122,9 +122,12 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
   }
 
   p = rulesfile_in_mem;
+  // Count the lines in the substitution_rules file
   while (p < rulesfile_in_mem + rulesfile_size) if (*p++ == '\n') lncnt++;  // This works for both Unix and Windows line termination.
 
-  // Now malloc the memory
+  if (debug >= 1) printf("  Counted %d rules. Possibly some are empty.\n", lncnt);
+
+  // Now malloc the memory for the arrays representing the rules.
   *substitution_rules_regex = (pcre2_code **)malloc((lncnt + 1) * sizeof(pcre2_code *));
 
   if (*substitution_rules_regex == NULL) {
@@ -157,21 +160,29 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
   }
 
 
+  // Now scan the rules file again and set up the LHS, RHS and has_operator array entries.
   p = rulesfile_in_mem;
   for (rule = 0; rule < lncnt; rule++) {
 
     line_start = p;
     while (p < rulesfile_in_mem + rulesfile_size && *p != '\t' && *p != '\n') p++;
+    patlen = p - line_start;
     if (*p == '\t') {
       // Yes, we have an LHS pattern starting at line_start.  Compile it.
-      patlen = p - line_start;
-
-      (*substitution_rules_regex)[rule] = pcre2_compile(line_start, patlen, PCRE2_UTF|PCRE2_CASELESS, &error_code, &error_offset, NULL);
+      if (debug >= 1) {
+	printf("%03d LHS: '", rule);
+	putchars(line_start, patlen);
+	printf("' -->  ");
+	// Line will be completed by RHS below.
+      }
+      (*substitution_rules_regex)[rule] = pcre2_compile(line_start, patlen, PCRE2_UTF|PCRE2_CASELESS,
+							&error_code, &error_offset, NULL);
       // Will be NULL if compilation failed.
       if ((*substitution_rules_regex)[rule] == NULL) {
 	u_char errbuf[200];
 	pcre2_get_error_message(error_code, errbuf, 199);
-	if (debug >= 1) printf("Compile failed for rule starting with %s.  Error_code: %d: %s\n", line_start, error_code, errbuf);
+	if (debug >= 1) printf("Compile failed for rule starting with %s.  Error_code: %d: %s\n",
+			       line_start, error_code, errbuf);
       }
 
       p++;
@@ -183,7 +194,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
       rhslen = p - rhs_start;
       (*substitution_rules_rhs)[rule] = (u_char *)malloc(rhslen + 1);
       if ((*substitution_rules_rhs)[rule] == NULL) {
-	error_code = -20079;
+	error_code = -20079;  // Malloc failed
 	break;
       }
 			
@@ -198,7 +209,13 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
       }
       else (*substitution_rules_rhs_has_operator)[rule] = 0;
       p++;
-      if (debug >= 2) printf("RHS: %s\n", (*substitution_rules_rhs)[rule]);
+      if (debug >= 1) printf("RHS: '%s'\n", (*substitution_rules_rhs)[rule]);
+    } else if (patlen > 1) {
+      // No tab found in non-empty rule
+      if (debug >= 1) {
+	printf("%03d Warning: No RHS found.  Missing TAB character in rule. LHS: ", rule);
+	putchars(line_start, patlen);
+      }
     }
   }
 
@@ -228,7 +245,8 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
 
 
   *num_substitution_rules = lncnt;
-  if (debug >= 1) printf("Substitution rules loaded: %d\n", lncnt);  fflush(stdout);
+  if (debug >= 1) printf("Substitution rules loaded: %d.  (Possibly some are empty.)\n", lncnt);
+  fflush(stdout);
   return lncnt;
 }
 

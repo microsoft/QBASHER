@@ -992,7 +992,14 @@ u_char *make_a_copy_of_len_bytes(u_char *in, size_t len) {
   return out;
 }
 
-
+void putchars(u_char *str, size_t n) {
+  // print the first n chars of str to stdout, stopping if a NUL is encountered
+  while (n > 0) {
+    if (*str == 0) return;  // ----->
+    putchar(*str++);
+    n--;
+  }
+}
 
 void show_string_upto_nator(u_char *str, u_char nator, int indent) {
   // Print str up to the first occurrence of nator or NUL,  preceded by 
