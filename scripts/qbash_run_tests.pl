@@ -269,7 +269,8 @@ for ($th = 0; $th < $qthreads; $th++) {
 	    my $rezo;
 	    if ($global_abort) {last;}
 	    $rezo = run_test($tests[$test]) 
-		unless $use_gcc_executables && $tests[$test] =~ /c-sharp/;
+		unless $use_gcc_executables && 
+		($tests[$test] =~ /c-sharp/ || $tests[$test] =~ /multi_threading/);
 	    if ($rezo) {
 		$global_abort++;
 		last;

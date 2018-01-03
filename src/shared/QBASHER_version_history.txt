@@ -1972,3 +1972,11 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
 *** v1.5.123-OS developer1 02 Jan 2017 *** Adapting to incompatible
     MacOS definition of qsort_r() (different order of parameters both
     in qsort_r() call and in call to comparison function.
+    
+*** v1.5.124-OS developer1 03 Jan 2017 *** Arranging to print a
+    warning message (in debug mode only) when a substitution rule
+    contains no TAB character.  This change made because developer2
+    found that TABs in the file had been mysteriously replaced with
+    spaces.  At the same time, significantly improve the usefulness of
+    info about substitution rules which is printed when debug >= 1
+    
