@@ -3100,7 +3100,7 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
   if (*error_code < 0) return NULL;  // -------------------------------->
 
 	
-  load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir, qoenv->language,
+  load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
 			  &qoenv->num_substitution_rules, &qoenv->substitution_rules_regex, &qoenv->substitution_rules_rhs,
 			  &qoenv->substitution_rules_rhs_has_operator, qoenv->debug);
 
@@ -3179,7 +3179,7 @@ static u_char *open_and_check_index_set_aether(query_processing_environment_t *q
 
 
   if (qoenv->fname_substitution_rules != NULL) 
-    load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir, qoenv->language,
+    load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
 			    &qoenv->num_substitution_rules, &qoenv->substitution_rules_regex, &qoenv->substitution_rules_rhs, 
 			    &qoenv->substitution_rules_rhs_has_operator, qoenv->debug);
 

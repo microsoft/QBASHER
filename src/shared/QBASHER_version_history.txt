@@ -1979,7 +1979,11 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     found that TABs in the file had been mysteriously replaced with
     spaces.  At the same time, significantly improve the usefulness of
     info about substitution rules which is printed when debug >= 1
-    
-*** v1.5.125-OS developer1 03 Jan 2017 *** It turned out that
+
+*** Minor changes to Makefile contributed by Joel Mackintosh ***
+
+*** v1.5.125-OS developer1 04 Jan 2017 *** It turned out that
     developer2's substitution_rules file had CR NL rather than just NL
-    and that that was the cause of the problem. Fixing that now. 
+    and that that was the cause of the problem. Fixing that now.
+
+*** v1.5.126-OS-segmentOverhaul developer1 04 Jan 2017 *** 

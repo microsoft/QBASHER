@@ -1,0 +1,158 @@
+\bstreet\b	[st street]	en
+\bst\b	[st street]	en
+\brd\b	[rd road]	en
+\broad\b	[rd road]	en
+\bct\b	[court crt ct]	en
+\bcrt\b	[court crt ct]	en
+\bcourt\b	[court crt ct]	en
+\bcct\b	[cct circuit cirt]	en
+\bcircuit\b	[cct circuit cirt]	en
+\bcirt\b	[cct circuit cirt]	en
+\bavenue\b	[ave avenue]	en
+\bave\b	[ave avenue]	en
+\bhwy\b	[hwy highway]	en
+\btx\b	[tx texas]	en
+\bca\b	[ca california]	en
+\bstraße\b	[straße strasse]	en
+\bstrasse\b	[straße strasse]	en
+\broad\b	[road rd]	en
+\brd\b	[road rd]	en
+\bpl\b	[place pl]	en
+\bplace\b	[place pl]	en
+\bdrive\b	[drive dr]	en
+\bdr\b	[drive dr]	en
+\bblvd\b	[boulevard blvd]	en
+\bboulevard\b	[boulevard blvd]	en
+\bave\b	[avenue ave av]	en
+\bav\b	[avenue ave av]	en
+\bavenue\b	[avenue ave av]	en
+\bhwy\b	[highway hwy]	en
+\bhighway\b	[highway hwy]	en
+\bpkwy\b	[parkway pkwy]	en
+\bparkway\b	[parkway pkwy]	en
+\bln\b	[lane ln]	en
+\blane\b   	[lane ln]	en
+\bal\b	[alabama al]	en
+\balabama\b	[alabama al]	en
+\bak\b	[alaska ak]	en
+\balaska\b	[alaska ak]	en
+\baz\b	[arizona az]	en
+\barizona\b	[arizona az]	en
+\bar\b	[arkansas ar]	en
+\barkansas\b	[arkansas ar]	en
+\bca\b	[california ca]	en
+\bcalifornia\b	[california ca]	en
+\bco\b	[colorado co]	en
+\bcolorado\b	[colorado co]	en
+\bct\b	[connecticut ct]	en
+\bconnecticaut\b	[connecticut ct]	en
+\bde\b	[delaware de]	en
+\bdelaware\b	[delaware de]	en
+\bdc\b	["district of columbia" dc]	en
+\bdistrict of columbia\b	["district of columbia" dc]	en
+\bfl\b	[florida fl]	en
+\bflorida\b	[florida fl]	en
+\bga\b	[georgia ga]	en
+\bgeorgia\b	[georgia ga]	en
+\bhi\b	[hawaii hi]	en
+\bhawaii\b	[hawaii hi]	en
+\bid\b	[idaho id]	en
+\bidaho\b	[idaho id]	en
+\bil\b	[illinois il]	en
+\billinois\b	[illinois il]	en
+\bin\b	[indiana in]	en
+\bindiana\b	[indiana in]	en
+\bia\b	[iowa ia]	en
+\biowa\b	[iowa ia]	en
+\bks\b	[kansas ks]	en
+\bkansas\b	[kansas ks]	en
+\bky\b	[kentucky ky]	en
+\bkentucky\b	[kentucky ky]	en
+\bla\b	[louisiana la]	en
+\blouisiana\b	[louisiana la]	en
+\bme\b	[maine me]	en
+\bmaine\b	[maine me]	en
+\bmd\b	[maryland md]	en
+\bmaryland\b	[maryland md]	en
+\bma\b	[massachusetts ma]	en
+\bmassachusetts\b	[massachusetts ma]	en
+\bmi\b	[michigan mi]	en
+\bmichigan\b	[michigan mi]	en
+\bmn\b	[minnesota mn]	en
+\bminnesota\b	[minnesota mn]	en
+\bms\b	[mississippi ms]	en
+\bmississippi\b	[mississippi ms]	en
+\bmo\b	[missouri mo]	en
+\bmissouri\b	[missouri mo]	en
+\bmt\b	[montana mt]	en
+\bmontana\b	[montana mt]	en
+\bne\b	[nebraska ne]	en
+\bnebraska\b	[nebraska ne]	en
+\bnv\b	[nevada nv]	en
+\bnevada\b	[nevada nv]	en
+\bnh\b	["new hampshire" nh]	en
+\bnew hampshire\b	["new hampshire" nh]	en
+\bnj\b	["new jersey" nj]	en
+\bnew jersey\b	["new jersey" nj]	en
+\bnm\b	["new mexico" nm]	en
+\bnew mexico\b	["new mexico" nm]	en
+\bny\b	["new york" ny]	en
+\bnew york\b	["new york" ny]	en
+\bnc\b	["north carolina" nc]	en
+\bnorth carolina\b	["north carolina" nc]	en
+\bnd\b	["north dakota" nd]	en
+\bnorth dakota\b	["north dakota" nd]	en
+\boh\b	[ohio oh]	en
+\bohio\b	[ohio oh]	en
+\bok\b	[oklahoma ok]	en
+\boklahoma\b	[oklahoma ok]	en
+\bor\b	[oregon or]	en
+\boregon\b	[oregon or]	en
+\bpa\b	[pennsylvania pa]	en
+\bpennsylvania\b	[pennsylvania pa]	en
+\bpr\b	["puerto rico" pr]	en
+\bpuerto rico\b	["puerto rico" pr]	en
+\bri\b	["rhode island" ri]	en
+\brhode island\b	["rhode island" ri]	en
+\bsc\b	["south carolina" sc]	en
+\bsouth carolina\b	["south carolina" sc]	en
+\bsd\b	["south dakota" sd]	en
+\bsouth dakota\b	["south dakota" sd]	en
+\btn\b	[tennessee tn]	en
+\btennessee\b	[tennessee tn]	en
+\btx\b	[texas tx]	en
+\btexas\b	[texas tx]	en
+\but\b	[utah ut]	en
+\butah\b	[utah ut]	en
+\bvt\b	[vermont vt]	en
+\bvermont\b	[vermont vt]	en
+\bva\b	[virginia va]	en
+\bvirginia\b	[virginia va]	en
+\bwa\b	[washington wa]	en
+\bwashington\b	[washington wa]	en
+\bwv\b	["west virginia" wv]	en
+\bwest virginia\b	["west virginia" wv]	en
+\bwi\b	[wisconsin wi]	en
+\bwisconsin\b	[wisconsin wi]	en
+\bwy\b	[wyoming wy]	en
+\bwyoming\b	[wyoming wy]	en
+\bact\b	["australian capital territory" act]	en
+\baustralian capital territory\b	["australian capital territory" act]	en
+\bnsw\b	["new south wales" nsw]	en
+\bnew south wales\b	["new south wales" nsw]	en
+\bnt\b	["northern territory" nt]	en
+\bnorthern territory\b	["northern territory" nt]	en
+\bqld\b	[queensland qld]	en
+\bqueensland\b	[queensland qld]	en
+\bsa\b	["south australia" sa]	en
+\bsouth australia\b	["south australia" sa]	en
+\btas\b	[tasmania tas]	en
+\btasmania\b	[tasmania tas]	en
+\bvic\b	[victoria vic]	en
+\bvictoria\b	[victoria vic]	en
+\bwa\b	["western australia" wa]	en
+\bwestern australia\b	["western australia" wa]	en
+\bus\b	[us usa "united states"]	en
+\busa\b	[us usa "united states"]	en
+\bunited states\b	[us usa "united states"]	en
+

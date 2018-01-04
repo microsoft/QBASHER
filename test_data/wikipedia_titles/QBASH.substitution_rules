@@ -1,0 +1,132 @@
+\bwith\b		TX
+\byoutube\b		TX
+g\breatest\b		TX
+^\bnames of\b		TX
+^\bnames\b		TX
+^\blist of\b		TX
+^\blist\b		TX
+^\bbest\b		TX
+^\bgreatest\b		TX
+\bnear\b		TX
+\blocated\b		TX
+\bactress\b		TX
+\bwrote\b		TX
+"(\w+) s"	[$1 $1s]	TX
+\b(\w+)'s\b	[$1 $1s] 	TX
+\bmovie list\b|\bfilmography\b	["movie list" filmography]	TX
+\bfilm\b|\bmovie\b|\bfilms\b|\bmovies\b|\bfilmography\b	[film movie films movies filmography]	TX
+\bpoints of interest\b|\bplaces to go\b|\bthings to do\b|\bplaces to see\b|\bplaces to visit\b|\btourist attractions\b|\bgreatest attractions\b	["points of interest" "places to go" "things to do" "places to see" "places to visit" "tourist attractions" "greatest attractions"]	TX
+\bchildren\b|\bkids\b	[children kids]	TX
+\bworks\b|\bbooks\b|\bbook\b	[works books book]	TX
+\balbum\b \bcd\b	[album cd]	TX
+\bmusic videos\b|\bmusic video\b|\bsong\b|\byoutube\b|\bsongs\b	["music videos" "music video" song youtube songs]	TX
+\byoutube videos\b|\bsongs\b	["youtube videos" songs]	TX
+\bsongs\b|\bhits\b	[songs hits]	TX
+\bgraduates\b|\balumni\b	[graduates alumni]	TX
+\bpassed away\b|\bdied\b	["passed away" died]	TX
+\bmusic videos\b|\bvideos\b|\bmusic video\b|\bsong\b|\byoutube\b	["music videos" videos "music video" song youtube]	TX
+\byoutube videos\b|\bsongs\b	["youtube videos" songs]	TX
+\bpassed away\b|\bdied\b	["passed away" died]	TX
+\bmovie actors\b|\bcast\b	["movie actors" cast]	TX
+\bwritten books\b|\bnovels\b	["written books" novels]	TX
+\bactors cast\b	[actors cast]	TX
+\bsongs hits\b	[songs hits]	TX
+\bshow\b|\bshows\b	[show shows]	TX
+\bgraduates alumni\b	[graduates alumni]	TX
+\b1\b|\bone\b	[1 one]	TX
+\b2\b|\btwo\b	[2 two]	TX
+\ba\b		TX
+\ball\b		TX
+\ban\b		TX
+\band\b		TX
+\banother\b		TX
+\bare\b		TX
+\bas\b		TX
+\bat\b		TX
+\bbe\b		TX
+\bbeen\b		TX
+\bcan\b		TX
+\bco\b		TX
+\bcould\b		TX
+\bdo\b		TX
+\bdoes\b		TX
+\beach\b		TX
+\belse\b		TX
+\betc\b		TX
+\bfor\b		TX
+\bhad\b		TX
+\bhas\b		TX
+\bhave\b		TX
+\bif\b		TX
+\bin\b		TX
+\binto\b		TX
+\bis\b		TX
+\bit\b		TX
+\bmay\b		TX
+\bme\b		TX
+\bmuch\b		TX
+\bmy\b		TX
+\bno\b		TX
+\bnone\b		TX
+\bnor\b		TX
+\bnot\b		TX
+\bnow\b		TX
+\bof\b		TX
+\boff\b		TX
+\bon\b		TX
+\bonce\b		TX
+\bone\b		TX
+\bonly\b		TX
+\bonto\b		TX
+\bor\b		TX
+\bother\b		TX
+\bothers\b		TX
+\bout\b		TX
+\bover\b		TX
+\bown\b		TX
+\bper\b		TX
+\brather\b		TX
+\bsame\b		TX
+\bsee\b		TX
+\bshould\b		TX
+\bso\b		TX
+\bsome\b		TX
+\bstill\b		TX
+\bsuch\b		TX
+\bthan\b		TX
+\bthat\b		TX
+\bthe\b		TX
+\bthen\b		TX
+\bthese\b		TX
+\bthis\b		TX
+\bthose\b		TX
+\bthough\b		TX
+\bthrough\b		TX
+\bthus\b		TX
+\bto\b		TX
+\btogether\b		TX
+\btoo\b		TX
+\btop\b		TX
+\btoward\b		TX
+\btowards\b		TX
+\bunder\b		TX
+\buntil\b		TX
+\bup\b		TX
+\bupon\b		TX
+\bvery\b		TX
+\bwas\b		TX
+\bwe\b		TX
+\bwere\b		TX
+\bwhat\b		TX
+\bwhen\b		TX
+\bwhere\b		TX
+\bwhether\b		TX
+\bwhich\b		TX
+\bwhile\b		TX
+\bwho\b		TX
+\bwhole\b		TX
+\bwhose\b		TX
+\bwhy\b		TX
+\bwill\b		TX
+\bwould\b		TX
+

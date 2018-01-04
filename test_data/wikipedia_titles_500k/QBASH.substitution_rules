@@ -1,0 +1,19 @@
+log in	login	en
+pet	[cat dog rat hamster]	en
+dog	[wolf dingo "domestic dog"]`	en
+clean	[tidy spotless]	en
+beatles	["love me do" "hey jude"]	en
+unpleasant 13	"13 days in hell"	en
+jump	dance	en
+lloyd webber	superstar	en
+superstar	australian actress	en
+australian actress	cate blanchett	en
+cate blanchett	oscars	en
+cat	error	en
+AFAF	"ablation for atrial fibrillation"	en
+"(\w+) s"	[$1 $1s]	en
+\b(\w+)'s\b	[$1 $1s]	en
+wonderful|fantastic|magnificent	[wonderful fantastic magnificent]	en
+UCASETEST	ZIPPERGATE	en
+tour eiffel	"eiffel tower"	fr
+

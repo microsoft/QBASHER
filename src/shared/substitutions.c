@@ -54,13 +54,13 @@ void unload_substitution_rules(int num_substitution_rules, pcre2_code ***substit
 }
 
 
-int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language,
+int load_substitution_rules(u_char *srfname, u_char *index_dir,
 			    int *num_substitution_rules, pcre2_code ***substitution_rules_regex,
 			    u_char ***substitution_rules_rhs, u_char **substitution_rules_rhs_has_operator, 
 			    int debug) {
   // If qoenv->fname_substitution_rules is defined, then attempt to load that file, otherwise 
-  // look for a file QBASH.substitution_rules_<language> in the index_dir
-  // If not found, return 0, otherwise expect to find lines of the form <LHS> TAB <RHS>
+  // look for a file QBASH.substitution_rules in the index_dir
+  // If not found, return 0, otherwise expect to find lines of the form <LHS> TAB <RHS> TAB <language code>
   // in the file and return a count of the rules found, or a negative error code
   u_char *rulesfile_in_mem, *p, *line_start, *rhs_start;
   size_t dirlen, rulesfile_size, patlen, rhslen, error_offset;
@@ -89,9 +89,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
     }
     else  {
       // The index_dir is defined
-      strcpy(katter, "QBASH.substitution_rules_");  // That string is 25 chars long
-      strncpy(katter + 25, (char *)language, 2);  // Restrict language to 2-letter code
-      katter[27] = 0;
+      strcpy(katter, "QBASH.substitution_rules");  // That string is 24 chars long
       dirlen = strlen((char *)index_dir);
       tfn = (char *)malloc(dirlen + 30);
       if (tfn == NULL) {
@@ -104,7 +102,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
 	tfn[dirlen] = 0;
       }
 			
-      if (!exists((char *)tfn, (char *)katter)) {
+      if (!exists((char *)tfn, katter)) {
 	if (debug > 0) printf("  Substitutions file %s%s doesn't exist.\n", tfn, katter);
 	return 0;  // ----------------------------------------------------->
       }

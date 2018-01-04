@@ -7,7 +7,7 @@ void unload_substitution_rules(int num_substitution_rules, pcre2_code ***substit
 	u_char ***substitution_rules_rhs, u_char**substitution_rules_rhs_has_operator);
 
 
-int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language, int *num_substitution_rules,
+int load_substitution_rules(u_char *srfname, u_char *index_dir, int *num_substitution_rules,
 			    pcre2_code ***substitution_rules_regex, u_char ***substitution_rules_rhs,
 			    u_char **substitution_rules_rhs_has_operator, int debug);
 
