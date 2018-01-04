@@ -50,9 +50,9 @@ for $ix (@ix) {
 die "Can't find QBASHER indexes in $ix\n" 
 	unless (-r "$ix/QBASH.if");
 die "Can't find substitution rules file in $ix\n" 
-	unless (-r "$ix/QBASH.substitution_rules_TX");
+	unless (-r "$ix/QBASH.substitution_rules");
 
-$subrules = count_lines_in_file("$ix/QBASH.substitution_rules_TX");
+$subrules = count_lines_in_file("$ix/QBASH.substitution_rules");
 
 print "\nNumber of substitution rules for $ix:  $subrules\n\n";
 
