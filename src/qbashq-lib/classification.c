@@ -33,6 +33,7 @@ static char *lyrics_prefixes[] =
     "a song with the ",
     "music and ",
     "song ",
+
     ""
   };
 
@@ -51,6 +52,7 @@ static char *words_suffixes[] =
     "to",
     ""
   };
+
 
 static char *lyrics2_prefixes[] =
   {
@@ -106,15 +108,14 @@ static char *final_removals_at_tail[] =
 
 int apply_lyrics_specific_rules(char *qstring) {
   // If the qstring includes one of many patterns identified by Developer2 (email of 18 Feb 2015) then 
-  // remove the lyrics-intent-specific parts of qstring and return non-zero
+  // remove the lyrics-intent-specific parts of qstring and return non-zero.
   // We assume qstring has been lower cased and space-normalized
   char pattern[MAX_PATTERN + 1], *r, *w, *ss, *tail;
   int yes = 0, p, s;
 
   if (0) printf("Applying lyrics-specific rules\n");
 
-  // First look for one specific double pattern:
-
+  // Step 1: first look for one specific double pattern:
   if (!strncmp(qstring, "a song with ", 12) && (tail = (char *)tailstr((u_char *)qstring, (u_char *)" in the lyrics")) != NULL) {
     *tail = 0;  // Null out the tail bit
     substitute((u_char *)qstring, (u_char *)"a song with ", (u_char *)"", NULL, FALSE);
@@ -122,7 +123,7 @@ int apply_lyrics_specific_rules(char *qstring) {
   }
 
   if (!yes) {
-    // Look for a set of patterns at the beginning of qstring.  We build up the patterns by 
+    // Step 2: Look for a set of patterns at the beginning of qstring.  We build up the patterns by 
     // combining a prefix with the word 'lyrics' and appending a suffix.  E.g.
     // "what are the " + "lyrics" + "for"
 
@@ -152,10 +153,11 @@ int apply_lyrics_specific_rules(char *qstring) {
 
 
   if (!yes) {
-    // Didn't find any of those, try "song words "
+    // Step 3: Didn't find any of those, try "song words "
     strcpy(pattern, "song words ");
     if (!strncmp(qstring, pattern, 11)) yes = 1;
     if (!yes) {
+      // Step 4:  Look for "words of", "words for" "words to", etc.
       strcpy(pattern, "words ");
       ss = pattern + 6;
       for (s = 0;; s++) {

@@ -165,7 +165,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
   for (rule = 0; rule < lncnt; rule++) {
 
     line_start = p;
-    while (p < rulesfile_in_mem + rulesfile_size && *p != '\t' && *p != '\n') p++;
+    while (p < rulesfile_in_mem + rulesfile_size && *p != '\t' && *p != '\r' && *p != '\n') p++;
     patlen = p - line_start;
     if (*p == '\t') {
       // Yes, we have an LHS pattern starting at line_start.  Compile it.
@@ -187,11 +187,9 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
 
       p++;
       rhs_start = p;
-      while (p < rulesfile_in_mem + rulesfile_size && *p != '\n') {
-	if (*p == '\r' && *(p + 1) == '\n') break;   // Ignore CRs unless followed by LF
-	p++;
-      }
+      while (p < rulesfile_in_mem + rulesfile_size && *p != '\r' && *p != '\n') p++;
       rhslen = p - rhs_start;
+      if (*p == '\r') p++; // Skip forward to the '\n' but don't include  the '\r' in the RHS.
       (*substitution_rules_rhs)[rule] = (u_char *)malloc(rhslen + 1);
       if ((*substitution_rules_rhs)[rule] == NULL) {
 	error_code = -20079;  // Malloc failed
@@ -208,7 +206,6 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
 	rules_with_operators_in_RHS++;
       }
       else (*substitution_rules_rhs_has_operator)[rule] = 0;
-      p++;
       if (debug >= 1) printf("RHS: '%s'\n", (*substitution_rules_rhs)[rule]);
     } else if (patlen > 1) {
       // No tab found in non-empty rule
@@ -217,6 +214,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, u_char *language
 	putchars(line_start, patlen);
       }
     }
+    p++; // Skip the newline
   }
 
 
