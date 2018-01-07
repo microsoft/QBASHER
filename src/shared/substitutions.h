@@ -2,17 +2,25 @@
 // Licensed under the MIT license.
 
 
+typedef struct {
+  int num_substitution_rules;
+  pcre2_code **substitution_rules_regex;
+  u_char **substitution_rules_rhs;
+  u_char *substitution_rules_rhs_has_operator;
+} rule_set_t;
 
-void unload_substitution_rules(int num_substitution_rules, pcre2_code ***substitution_rules_regex, 
-	u_char ***substitution_rules_rhs, u_char**substitution_rules_rhs_has_operator);
 
+typedef struct {  // These are the values in the substitutions hash table
+  int num_substitution_rules;
+  rule_set_t *rule_set;
+} lang_specific_rules_t;
+  
+  
+void unload_substitution_rules(dahash_table_t **substitutions_hash, int debug);
 
-int load_substitution_rules(u_char *srfname, u_char *index_dir, int *num_substitution_rules,
-			    pcre2_code ***substitution_rules_regex, u_char ***substitution_rules_rhs,
-			    u_char **substitution_rules_rhs_has_operator, int debug);
+int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t **substitutions_hash, int debug);
 
-int apply_substitutions_rules_to_string(int num_substitution_rules, pcre2_code **substitution_rules_regex,
-					u_char **substitution_rules_rhs, u_char *substitution_rules_rhs_has_operator,
+int apply_substitutions_rules_to_string(dahash_table_t *sash, u_char *language,
 					u_char *intext, BOOL avoid_operators_in_subject,
 					BOOL avoid_operators_in_rule, int debug);
 

@@ -11,6 +11,7 @@
 #include "../shared/unicode.h"
 #include "../shared/utility_nodeps.h"
 #include "../shared/QBASHER_common_definitions.h"
+#include "../utils/dahash.h"
 #include "QBASHQ.h"
 #include "query_shortening.h"
 

@@ -73,6 +73,8 @@ void set_cpu_affinity(u_int cpu);
 
 double what_time_is_it();
 
+int validate_and_normalise_language_code(u_char *str);
+
 size_t map_bytes(u_char *dest, u_char *src, size_t n, u_char *map);
 
 int strcasecmp(const char *s, const char *t);

@@ -27,7 +27,7 @@ all: QBASHI.exe libpcre2 libQBASHQ-LIB.a QBASH_vocab_lister.exe TFdistribution_f
 QBASHI.exe: qbashi/arg_parser.o qbashi/input_buffer_management.o  qbashi/QBASHI.o qbashi/Write_Inverted_File.o utils/dahash.o utils/linked_list.o shared/utility_nodeps.o shared/unicode.o imported/Fowler-Noll-Vo-hash/fnv.o utils/dynamic_arrays.o utils/latlong.o 
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-QBASHQ_OBJECTS=qbashq-lib/QBASHQ_lib.o qbashq-lib/arg_parser.o qbashq-lib/classification.o qbashq-lib/error_explanations.o qbashq-lib/saat.o qbashq-lib/relaxation.o  qbashq-lib/query_shortening.o shared/utility_nodeps.o shared/unicode.o shared/substitutions.o utils/latlong.o utils/street_addresses.o
+QBASHQ_OBJECTS=qbashq-lib/QBASHQ_lib.o qbashq-lib/arg_parser.o qbashq-lib/classification.o qbashq-lib/error_explanations.o qbashq-lib/saat.o qbashq-lib/relaxation.o  qbashq-lib/query_shortening.o shared/utility_nodeps.o shared/unicode.o shared/substitutions.o utils/latlong.o utils/street_addresses.o utils/dahash.o  utils/dahash.o imported/Fowler-Noll-Vo-hash/fnv.o
 
 libQBASHQ-LIB.a:  $(QBASHQ_OBJECTS) 
 	ar -cvr $@  $(QBASHQ_OBJECTS)

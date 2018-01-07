@@ -30,6 +30,7 @@
 #include "../shared/unicode.h"
 #include "../shared/QBASHER_common_definitions.h"
 #include "../shared/utility_nodeps.h"
+#include "../utils/dahash.h"
 #include "../qbashq-lib/QBASHQ.h"
 #include "../qbashq-lib/arg_parser.h"
 #include "../qbashq-lib/classification.h"

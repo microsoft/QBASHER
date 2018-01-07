@@ -782,6 +782,29 @@ void error_exit(char *msg) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+int validate_and_normalise_language_code(u_char *str) {
+  // Check that str comprises exactly two ASCII letters (as required for ISO 639:1
+  // language codes.  Lower case the two bytes if that's true and return 0.
+  // Otherwise return -1 and do nothing.  Don't use tolower() or isalpha()
+  // because they are locale-dependent.
+  u_char *p = str;
+
+  // Check that str is at least two chars long and that its 3rd byte is a NUL, Space or control.
+  if (p == NULL || *p == 0 || *(p + 1) == 0 || *(p + 2) > ' ') return(-1); // --------------------------------------->
+
+  // Process first byte
+  if (*p & 0x80) return(-1); // --------------------------------------->
+  if (*p < 'A' || *p > 'z' || (*p > 'Z' && *p < 'a')) return(-1); // -------------------->	
+  if (*p >= 'A' && *p <= 'Z') *p += 32;
+  p++;
+  // Process second byte
+  if (*p & 0x80) return(-1); // --------------------------------------->
+  if (*p < 'A' || *p > 'z' || (*p > 'Z' && *p < 'a'))  return(-1); // -------------------->
+  if (*p >= 'A' && *p <= 'Z') *p += 32;
+  return 0;
+}
+
+
 size_t map_bytes(u_char *dest, u_char *src, size_t n, u_char *map) {
   // Copy up to n characters of src into dest, while applying a byte-for-byte mapping.
   // Dest must be at least n bytes and will be null terminated only if src is shorter

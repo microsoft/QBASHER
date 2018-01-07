@@ -21,6 +21,7 @@
 
 #include "../shared/utility_nodeps.h"
 #include "../shared/QBASHER_common_definitions.h"
+#include "../utils/dahash.h"
 #include "QBASHQ.h"
 #include "arg_parser.h"
 
@@ -95,7 +96,7 @@ arg_t args[] = {
   /* 42 */{ "debug", AINT, FALSE, 0, 10, "Activate debugging output.  0 - none, 1 - low, 4 - highest; 3 - runs tests; 10 - no debugging but unbuffer stdout" },
   /* 43 */ { "x_show_qtimes", ABOOL, TRUE, 0, 10, "Set query_streams to one and print a QTIMES: line for each query processed, giving elapsed msec.  (experimental)" },
   /* 44 */{ "object_store_files", ASTRING, TRUE, 0, 0, "A comma separated list of four index files + config." },
-  /* 45 */{ "language", ASTRING, TRUE, 0, 0, "Any language specific processing will be done in this language, if supported.  Two-char language code. E.g. EN, de, FR, zh" },
+  /* 45 */{ "language", ASTRING, FALSE, 0, 0, "Any language specific processing will be done in this language, if supported.  Two-char language code. E.g. EN, de, FR, zh" },
   /* 46 */{ "use_substitutions", ABOOL, FALSE, 0, 0, "If TRUE, and there is a QBASH.substitution_rules file, substitutions for the current language will be applied to queries." },
   /* 47 */{ "include_result_details", ABOOL, FALSE, 0, 0, "If TRUE, each search result will include 3 extra tab separated fields with additional information. (classifier modes only." },
   /* 48 */{ "extra_col", AINT, FALSE, 0, 10, "An extra TSV column to include in classifier-mode results display.  If extra_col=0 the output column will be present but empty." },
@@ -237,7 +238,7 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->debug = 0;
   qoenv->x_show_qtimes = FALSE;
   qoenv->object_store_files = NULL;
-  qoenv->language = make_a_copy_of((u_char *)"EN");
+  qoenv->language = make_a_copy_of((u_char *)"en");
   qoenv->use_substitutions = FALSE;
   qoenv->include_result_details = TRUE;
   qoenv->include_extra_features = FALSE;
@@ -258,9 +259,7 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->scoring_needed = TRUE;
   qoenv->report_match_counts_only = FALSE;
   qoenv->query_output = stdout;
-  qoenv->num_substitution_rules = 0;
-  qoenv->substitution_rules_regex = NULL;
-  qoenv->substitution_rules_rhs = NULL;
+  qoenv->substitutions_hash = NULL;
 
   // Setting up for statistics recording for the batch of queries run with these options
   qoenv->inthebeginning = what_time_is_it();  //Probably not in the right place. Reset in QBASHQ.c
@@ -386,6 +385,7 @@ int assign_one_arg(query_processing_environment_t *qoenv, u_char *arg_equals_val
   // Now assign the value.  Unless this is an immutable option and we are not initialising
   if (initialising || !args[argnum].immutable) {
     u_char **ptr2string = NULL;
+    int rslt;
     if (0) fprintf(stderr, "Found!   Arg %d, value='%s'\n", argnum, p);
     switch (args[argnum].type) {
     case ASTRING:
@@ -401,6 +401,19 @@ int assign_one_arg(query_processing_environment_t *qoenv, u_char *arg_equals_val
 	if (0) fprintf(stderr, "Skipping empty ASTRING value\n");
 	break;  // If we have an empty arg we null out what was there before but otherwise ignore it.
       }
+
+      if (!strcmp((char *)args[a].attr, "language")) {
+	// special check to ensure that language string consists of
+	// two lower-case ASCII bytes.  Error for bad length or non alpha.
+	// Bytes lower cased. 
+	
+	rslt = validate_and_normalise_language_code(p);
+	if (rslt != 0) {
+	  if (explain) printf("%s: ", arg_equals_val);
+	  return(-3); // --------------------------------------->
+	}
+      }
+      
       if (vallen > MAX_VALSTRING) vallen = MAX_VALSTRING;
       t = (u_char *)malloc(vallen + 1);  // MAL3001
       if (t == NULL) {

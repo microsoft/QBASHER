@@ -168,9 +168,7 @@ typedef struct {
   // ---- Substitution rules are read from a TSV file, such as QBASH.substitution_rules_FR where FR is the language.
   BOOL use_substitutions, include_result_details, include_extra_features, allow_per_query_options,
     generate_JO_path, conflate_accents;
-  int num_substitution_rules;
-  pcre2_code **substitution_rules_regex;
-  u_char **substitution_rules_rhs, *substitution_rules_rhs_has_operator;
+  dahash_table_t *substitutions_hash;  
 
   // ---- Statistics recorded across the batch of queries run with this set of options
   double inthebeginning;

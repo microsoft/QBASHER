@@ -39,6 +39,7 @@
 
 #include "../shared/utility_nodeps.h"
 #include "../shared/QBASHER_common_definitions.h"
+#include "../utils/dahash.h"
 #include "QBASHQ.h"
 
 #define QBASHER_DEFINED_ERROR_CODES 81

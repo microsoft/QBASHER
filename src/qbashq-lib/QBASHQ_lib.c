@@ -72,7 +72,6 @@
 //   7 - URL 1
 //
 // 
-
 // ------------------------  Thread Safety 08 August 2014 ---------------------------------
 //
 // http://msdn.microsoft.com/en-us/library/windows/desktop/ms686774(v=vs.85).aspx says that
@@ -105,6 +104,7 @@
 #include "../shared/unicode.h"
 #include "../shared/utility_nodeps.h"
 #include "../shared/QBASHER_common_definitions.h"
+#include "../utils/dahash.h"
 #include "../utils/latlong.h"
 #include "../utils/street_addresses.h"
 #include "QBASHQ.h"
@@ -1769,9 +1769,7 @@ int possibly_record_candidate(query_processing_environment_t *qoenv,
       // Make substitutions in the candidate document, but not if query operators are present or would be introduced.
       // Note: apply_substitutions_rules_to_string() applies limits to the input length, and to the output
       // length.  If input > 256 no substitutions will occur.  Output is limited to 
-      apply_substitutions_rules_to_string(qoenv->num_substitution_rules, qoenv->substitution_rules_regex,
-					  qoenv->substitution_rules_rhs,
-					  qoenv->substitution_rules_rhs_has_operator, dc_copy,
+      apply_substitutions_rules_to_string(qoenv->substitutions_hash, qoenv->language, dc_copy,
 					  TRUE, TRUE, qoenv->debug);
 
       if (qoenv->debug >= 2)
@@ -2472,11 +2470,10 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
 	     q, qex->query);
   }
 
-  if (qoenv->num_substitution_rules > 0 && qoenv->use_substitutions) {
+  if (qoenv->use_substitutions) {
     // Applying substitutions to the query but not if it already contains operators.  Stop if
     // a substitution rule has introduced an operator.
-    apply_substitutions_rules_to_string(qoenv->num_substitution_rules, qoenv->substitution_rules_regex,
-					qoenv->substitution_rules_rhs, qoenv->substitution_rules_rhs_has_operator,
+    apply_substitutions_rules_to_string(qoenv->substitutions_hash, qoenv->language,
 					q, TRUE, FALSE, qoenv->debug);
     if (qoenv->display_parsed_query)
       printf("Query after application of %s substitutions is {%s}; Original query was {%s}\n",
@@ -3101,8 +3098,7 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
 
 	
   load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
-			  &qoenv->num_substitution_rules, &qoenv->substitution_rules_regex, &qoenv->substitution_rules_rhs,
-			  &qoenv->substitution_rules_rhs_has_operator, qoenv->debug);
+			  &qoenv->substitutions_hash, qoenv->debug);
 
 
   version = check_if_header(ixenv, qoenv, &other_token_breakers, index_path, error_code);
@@ -3180,8 +3176,7 @@ static u_char *open_and_check_index_set_aether(query_processing_environment_t *q
 
   if (qoenv->fname_substitution_rules != NULL) 
     load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
-			    &qoenv->num_substitution_rules, &qoenv->substitution_rules_regex, &qoenv->substitution_rules_rhs, 
-			    &qoenv->substitution_rules_rhs_has_operator, qoenv->debug);
+			    &(qoenv->substitutions_hash), qoenv->debug);
 
   // Now setup ascii_non_tokens (defined and zeroed in unicode.c)
   initialize_ascii_non_tokens((u_char *)QBASH_META_CHARS, FALSE);
@@ -4055,7 +4050,6 @@ int finalize_query_processing_environment(query_processing_environment_t *qoenv,
     }
   }
 
-
   if (qoenv->max_length_diff == IUNDEF) {
     // In classifier_modes 2 and 4, the classification score is based on sums of IDF values.  When the queries are short
     // and the records are long, QPS rates and latencies deteriorate, sometimes very dramatically (factor of 100 in QPS)
@@ -4300,9 +4294,8 @@ void unload_query_processing_environment(query_processing_environment_t **qoenvp
   if (qoenv == NULL) return;
 
   if (full_clean) {
-    if (qoenv->num_substitution_rules > 0) {
-      unload_substitution_rules(qoenv->num_substitution_rules, &qoenv->substitution_rules_regex,
-				&qoenv->substitution_rules_rhs, &qoenv->substitution_rules_rhs_has_operator);
+    if (qoenv->substitutions_hash != NULL) {
+      unload_substitution_rules(&qoenv->substitutions_hash, qoenv->debug);
     }
   }
 #ifdef WIN64
