@@ -775,8 +775,6 @@ void error_exit(char *msg) {
 }
 
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // String functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -790,7 +788,7 @@ int validate_and_normalise_language_code(u_char *str) {
   u_char *p = str;
 
   // Check that str is at least two chars long and that its 3rd byte is a NUL, Space or control.
-  if (p == NULL || *p == 0 || *(p + 1) == 0 || *(p + 2) > ' ') return(-1); // --------------------------------------->
+  if (p == NULL || *p == 0 || *(p + 1) == 0 || *(p + 2) > ' ') return(-1); // ----------------->
 
   // Process first byte
   if (*p & 0x80) return(-1); // --------------------------------------->

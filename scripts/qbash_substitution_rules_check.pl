@@ -127,18 +127,18 @@ $err_cnt += check_count("\\\"macdonald s\\\"", "-use_substitutions=TRUE -display
 print "Checking multiple substitutions with operators ....\n";
 
 
-$err_cnt += check_results_match_pattern("pet", "-use_substitutions=TRUE -display_parsed_query=TRUE", "EN substitutions is \\{[cat dog rat hamster]");
+$err_cnt += check_results_match_pattern("pet", "-use_substitutions=TRUE -display_parsed_query=TRUE", "en substitutions is \\{[cat dog rat hamster]");
 
-$err_cnt += check_results_match_pattern("dog", "-use_substitutions=TRUE -display_parsed_query=TRUE", "EN substitutions is \\{[wolf dingo \"domestic dog\"]");
+$err_cnt += check_results_match_pattern("dog", "-use_substitutions=TRUE -display_parsed_query=TRUE", "en substitutions is \\{[wolf dingo \"domestic dog\"]");
 
-$err_cnt += check_results_match_pattern("wonderful", "-use_substitutions=TRUE -display_parsed_query=TRUE", "EN substitutions is \\{[wonderful fantastic magnificent]");
+$err_cnt += check_results_match_pattern("wonderful", "-use_substitutions=TRUE -display_parsed_query=TRUE", "en substitutions is \\{[wonderful fantastic magnificent]");
 
-$err_cnt += check_results_match_pattern("magnificent", "-use_substitutions=TRUE -display_parsed_query=TRUE", "EN substitutions is \\{[wonderful fantastic magnificent]");
+$err_cnt += check_results_match_pattern("magnificent", "-use_substitutions=TRUE -display_parsed_query=TRUE", "en substitutions is \\{[wonderful fantastic magnificent]");
 
 
-$err_cnt += check_results_match_pattern("magnificent", "-use_substitutions=TRUE -display_parsed_query=TRUE", "EN substitutions is \\{[wonderful fantastic magnificent]");
+$err_cnt += check_results_match_pattern("magnificent", "-use_substitutions=TRUE -display_parsed_query=TRUE", "en substitutions is \\{[wonderful fantastic magnificent]");
 
-$err_cnt += check_results_match_pattern("what a magnificent clean young pet it is", "-use_substitutions=TRUE -display_parsed_query=TRUE", "EN substitutions is \\{what a [wonderful fantastic magnificent] [tidy spotless] young [cat dog rat hamster] it is");
+$err_cnt += check_results_match_pattern("what a magnificent clean young pet it is", "-use_substitutions=TRUE -display_parsed_query=TRUE", "en substitutions is \\{what a [wonderful fantastic magnificent] [tidy spotless] young [cat dog rat hamster] it is");
 
 
 

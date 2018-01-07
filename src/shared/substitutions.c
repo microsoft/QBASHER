@@ -162,7 +162,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
   CROSS_PLATFORM_FILE_HANDLE H;
   HANDLE MH;
   int error_code = 0, lncnt = 0, fldcnt, rule, rules_with_operators_in_RHS = 0, e;
-  BOOL explain = (1 || (debug >= 1));
+  BOOL explain = 1 || (debug >= 1);
 
   if (srfname != NULL) {
     if (!exists((char *)srfname, "")) {
@@ -236,14 +236,23 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
 	  printf("Validating: ");
 	  show_string_upto_nator(current_field, '\n', 0);
 	}
-	rslt = validate_and_normalise_language_code(current_field);
 
-	if (rslt == 0) {
+	// Must copy to writeable memory before calling v_and_n
+	rslt = -1;  // Assume the worst
+	if (current_field != NULL && current_field[0] != 0) {
 	  lang_code[0] = current_field[0];
 	  lang_code[1] = current_field[1];
 	  lang_code[2] = 0;
+	
+	  rslt = validate_and_normalise_language_code(lang_code);
+	}
+	if (rslt == 0) {
 	  // Lookup lang_code in the substitutions_hash.
 	  lsr = (lang_specific_rules_t *)dahash_lookup(sash, lang_code, 1);  // 1 means add the key if it's not already there.
+	  if (lsr == NULL) {
+	    printf("Error: dahash_lookup failed for %s\n", lang_code);  // Shouldn't ever happen.
+	    return -1;  // --------------------- Need to make up an error code --------------->
+	  }
 	  lsr->num_substitution_rules++;   // This will have been zeroed if it's a newly created entry
 	  lncnt++;  
 	} else {
@@ -287,6 +296,9 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
   //
   // We have to scan the whole line before doing anything because the language is
   // in field 3.
+
+  if (explain) printf("Scanning the rules again..\n");
+  
   p = rulesfile_in_mem;
   current_field = p;
   line_start = p;
@@ -304,7 +316,17 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
     } else if (*p == '\n') {  // This works for both Unix and Windows line termination.
       if (fldcnt == 3) {
 	// We're at the end of line.
-	int rslt = validate_and_normalise_language_code(current_field);
+	int rslt;
+	// Must copy to writeable memory before calling v_and_n
+	rslt = -1;  // Assume the worst
+	if (current_field != NULL && current_field[0] != 0) {
+	  lang_code[0] = current_field[0];
+	  lang_code[1] = current_field[1];
+	  lang_code[2] = 0;
+	
+	  rslt = validate_and_normalise_language_code(lang_code);
+	}
+
 	if (rslt == 0) {
 	  lang_code[0] = current_field[0];
 	  lang_code[1] = current_field[1];
