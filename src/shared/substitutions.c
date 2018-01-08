@@ -327,9 +327,6 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
 	}
 
 	if (rslt == 0) {
-	  lang_code[0] = current_field[0];
-	  lang_code[1] = current_field[1];
-	  lang_code[2] = 0;
 	  // Lookup lang_code in the substitutions_hash.
 	  lsr = (lang_specific_rules_t *)dahash_lookup(sash, lang_code, 0);  // 0 means don't add the key
 	  if (lsr != NULL) {
@@ -416,13 +413,12 @@ int apply_substitutions_rules_to_string(dahash_table_t *sash, u_char *language,
   pcre2_match_data *p2md;
   BOOL explain = (debug >= 1);
 
-
   if (sash == NULL || language == NULL || language[0] == 0) return 0;  // -------------------------------R>
 
   lsr = (lang_specific_rules_t *)dahash_lookup(sash, language, 0);  // 0 means don't add the key if it's not already there.
   if (lsr == NULL)  return 0;  // ----------------------------------------------------------------------R>
   rs = lsr->rule_set;
-  
+
   if (rs == NULL
       || rs->num_substitution_rules == 0
       || rs->substitution_rules_regex == NULL
