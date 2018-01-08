@@ -304,7 +304,8 @@ int main(int argc, char* argv[]) {
 
   initialize_ascii_non_tokens(token_break_set, TRUE);
 
-  term_rep_table = dahash_create((u_char *)"repetitions", 24, MAX_REP_LEN, sizeof(long long), (double)0.9);
+  term_rep_table = dahash_create((u_char *)"repetitions", 24, MAX_REP_LEN,
+				 sizeof(long long), (double)0.9, TRUE);
 
   filename = (u_char *)malloc(strlen(argv[1]) + 50);
   if (filename == NULL) error_exit("Malloc failed for filename\n");

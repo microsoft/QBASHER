@@ -1986,12 +1986,26 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     developer2's substitution_rules file had CR NL rather than just NL
     and that that was the cause of the problem. Fixing that now.
 
-*** v1.5.126-OS-segmentOverhaul developer1 05 Jan 2017 *** 
+*** v1.5.126-OS developer1 05 Jan 2017 *** 
     1. Change to read QBASH.substitution_rules rather than
-    QBASH.substitution_rules_<language>.
+       QBASH.substitution_rules_<language>.
     2. In assign_one_arg() check that the length of a value supplied
-    for -language= comprises exactly two ASCII letters and lower case
-    them.
+       for -language= comprises exactly two ASCII letters and lower case
+       them.
     3. Change the language= attribute in arg_parser.c to no longer be
-    immutable. I.e. it can now be changed on a per-query basis.
+       immutable. I.e. it can now be changed on a per-query basis.
+    4. Overhaul the substitutions code to use a hash accessed by
+       2-letter language code e.g. fr or ZH to store the rule-sets
+       for an arbitrary number of languages.
+    	- Change the load, unload and apply_rules functions in
+          substitutions.c
+	- Change the query_environment_t structure to reference
+	  the substitutions_hash.
+    5. Modify the build tests relating to substitutions to work with
+       the new model.
+    6. Add a 'verbose' parameter to dahash_create() to avoid clutter
+       in query processing output.
+       
+	  
+     
     

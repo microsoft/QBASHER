@@ -146,10 +146,12 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\imported\Fowler-Noll-Vo-hash\fnv.h" />
     <ClInclude Include="..\shared\QBASHER_common_definitions.h" />
     <ClInclude Include="..\shared\substitutions.h" />
     <ClInclude Include="..\shared\unicode.h" />
     <ClInclude Include="..\shared\utility_nodeps.h" />
+    <ClInclude Include="..\utils\dahash.h" />
     <ClInclude Include="..\utils\latlong.h" />
     <ClInclude Include="..\utils\street_addresses.h" />
     <ClInclude Include="arg_parser.h" />
@@ -159,9 +161,11 @@
     <ClInclude Include="saat.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\imported\Fowler-Noll-Vo-hash\fnv.c" />
     <ClCompile Include="..\shared\substitutions.c" />
     <ClCompile Include="..\shared\unicode.c" />
     <ClCompile Include="..\shared\utility_nodeps.c" />
+    <ClCompile Include="..\utils\dahash.c" />
     <ClCompile Include="..\utils\latlong.c" />
     <ClCompile Include="..\utils\street_addresses.c" />
     <ClCompile Include="arg_parser.c" />

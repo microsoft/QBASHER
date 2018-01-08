@@ -1131,7 +1131,7 @@ void allocate_hashtable_and_heap(docnum_t doccount_estimate) {
     else if (doccount_estimate > 5000000) hashbits = 21;
   }
 
-  word_table = dahash_create((u_char *)"words", hashbits, MAX_WD_LEN, VOCAB_ENTRY_SIZE, (double)0.9);
+  word_table = dahash_create((u_char *)"words", hashbits, MAX_WD_LEN, VOCAB_ENTRY_SIZE, (double)0.9, FALSE);
 #ifdef WIN64
   report_memory_usage(stdout, (u_char *)"after creating hash table", NULL);
 #endif

@@ -123,6 +123,12 @@ $err_cnt += check_count("\\\"macdonald s\\\"", "-use_substitutions=TRUE -display
 #        );
 
 
+print "Checking that there's no crash or bad behaviour from an undefined language\n";
+
+$err_cnt += check_count("log in", "-use_substitutions=FALSE -display_col=1", 2, 0);
+$err_cnt += check_count("log in", "-language=XX -use_substitutions=TRUE -display_col=1", 2, 0);
+
+
 
 print "Checking multiple substitutions with operators ....\n";
 
@@ -262,7 +268,7 @@ sub check_count {
                  die "\n\n$rslts\nResults for '$cmd' contain duplicate suggestions\n"
                         if defined($dup_check{$1});
                  $dup_check{$1} = 1;
-                 print "\n\n  ----> Result matched was '$1'.  Score was $2\n";
+                 # print "\n\n  ----> Result matched was '$1'.  Score was $2\n";
                 $count++;
         }
         print sprintf(" - %4d %4d - ", $expected, $count);

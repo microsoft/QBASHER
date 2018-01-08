@@ -71,7 +71,7 @@
 #include "dahash.h"
 
 dahash_table_t *dahash_create(u_char *name, int bits, size_t key_len, size_t val_size,
-			      double max_full_frac) {
+			      double max_full_frac, BOOL verbose) {
   // Create and return the control block for a hash table.  Allocate and clear the memory for
   // its power of two table.
   size_t table_ents;
@@ -113,7 +113,7 @@ dahash_table_t *dahash_create(u_char *name, int bits, size_t key_len, size_t val
     exit(1);
   }
   memset(ht->table, 0, entsize * table_ents);
-  printf("Hash table %s created. (Bits = %d.) Memory allocated: %zu * %zu = %.1fMB\n",
+  if (verbose) printf("Hash table %s created. (Bits = %d.) Memory allocated: %zu * %zu = %.1fMB\n",
 	 name, ht->bits, table_ents, entsize, (double)(entsize * table_ents) /1048576.0);
   return ht;
 }

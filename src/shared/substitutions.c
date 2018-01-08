@@ -110,18 +110,16 @@ void unload_substitution_rules(dahash_table_t **substitutions_hash, int debug) {
       }
       if (explain) printf("Destroyed arrays for %d %s rules.\n",
 				  rs->num_substitution_rules, hep);
-       rs->num_substitution_rules = 0;
-       free(lsr);
+      free(rs);
+      lsr->rule_set = NULL;     
+      lsr->num_substitution_rules = 0;
     }
     table_off += sash->entry_size;
   }
 
   // Finally, destroy the hashtable.
   dahash_destroy(substitutions_hash);
-  
 }
-
-
 
 
 static void create_arrays_for_rule_set(rule_set_t *rs, int num_rules) {
@@ -162,7 +160,7 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
   CROSS_PLATFORM_FILE_HANDLE H;
   HANDLE MH;
   int error_code = 0, lncnt = 0, fldcnt, rule, rules_with_operators_in_RHS = 0, e;
-  BOOL explain = 1 || (debug >= 1);
+  BOOL explain = (debug >= 1);
 
   if (srfname != NULL) {
     if (!exists((char *)srfname, "")) {
@@ -216,7 +214,8 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
 
   // Create a dynamic hash table with initially 8 entries and with a key length of 2 bytes
   // (The terminating null is allowed for.
-  *substitutions_hash = dahash_create((u_char *)"Substitutions", 3, 2, sizeof(lang_specific_rules_t), 0.90);
+  *substitutions_hash = dahash_create((u_char *)"Substitutions", 3, 2,
+				      sizeof(lang_specific_rules_t), 0.90, FALSE);
   sash = *substitutions_hash;
 
   // ---------------------------------------------------------------------------------------

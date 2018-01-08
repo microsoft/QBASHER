@@ -25,7 +25,7 @@ int main(int argc, char**argv) {
    int *value_ptr;
   // Create a hash table called Demo with an initial theoretical maximum size of 1024 (10 bits), whose keys 
   // are strings of max length 20 bytes and whose values are ints.
-   demo_hash =  dahash_create((u_char *)"Demo", 10, 20, sizeof(int), 0.90); 
+   demo_hash =  dahash_create((u_char *)"Demo", 10, 20, sizeof(int), 0.90, TRUE); 
  // Insert a bunch of items
  value_ptr = (int *)dahash_lookup(demo_hash, (u_char *)"orange", 1);   // 1 means add the key if it's not already there.
 (*value_ptr)++;

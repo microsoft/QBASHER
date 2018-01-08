@@ -28,7 +28,7 @@ typedef struct {
 
 // Create a hash table
 dahash_table_t *dahash_create(u_char *name, int bits, size_t key_len, size_t value_size,
-	double max_full_frac);
+			      double max_full_frac, BOOL verbose);
 
 // Destroy a hash table
 void dahash_destroy(dahash_table_t **ht);

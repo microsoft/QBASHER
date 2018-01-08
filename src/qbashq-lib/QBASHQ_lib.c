@@ -3097,8 +3097,9 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
   if (*error_code < 0) return NULL;  // -------------------------------->
 
 	
-  load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
-			  &qoenv->substitutions_hash, qoenv->debug);
+  if (qoenv->use_substitutions)
+    load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
+			    &qoenv->substitutions_hash, qoenv->debug);
 
 
   version = check_if_header(ixenv, qoenv, &other_token_breakers, index_path, error_code);
@@ -3174,7 +3175,7 @@ static u_char *open_and_check_index_set_aether(query_processing_environment_t *q
   if (*error_code < 0) return NULL;  // -------------------------------->
 
 
-  if (qoenv->fname_substitution_rules != NULL) 
+  if (qoenv->use_substitutions && qoenv->fname_substitution_rules != NULL) 
     load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
 			    &(qoenv->substitutions_hash), qoenv->debug);
 
