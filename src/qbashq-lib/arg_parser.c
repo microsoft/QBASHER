@@ -56,39 +56,39 @@ arg_t args[] = {
   /*  3 */{ "file_vocab", ASTRING, TRUE, 0, 0, "The name of the .vocab file  produced during indexing. (Incompat. with index_dir)" },
   /*  4 */{ "file_doctable", ASTRING, TRUE, 0, 0, "The name of the .doctable file produced during indexing. (Incompat. with index_dir)" },
   /*  5 */{ "file_substitution_rules", ASTRING, TRUE, 0, 0, "The name of a file containing regex substitution rules. (Incompat. with index_dir)" },
-  /*  6 */{ "file_query_batch", ASTRING, TRUE, 0, 0, "The name of a file containing queries to be processed. (Incompat. with pq)" },
-  /*  7 */{ "file_output", ASTRING, TRUE, 0, 0, "The name of a file to which output will be written." },
-  /*  8 */{ "file_config", ASTRING, TRUE, 0, 0, "The name of a config file containing additional QBASHQ arguments." },
-  /*  9 */{ "pq", ASTRING, TRUE, 0, 0, "The partial query typed by the user.  If absent, QBASHQ will expect a stream of partial queries from file_query_batch or STDIN" },
-  /* 10 */{ "max_to_show", AINT, TRUE, 0, 1000, "Maximum number of results to display. [Experimental]: Zero activates a special mode which reports a full match count but no results" },
-  /* 11 */{ "max_candidates", AINT, TRUE, 1, 1000, "Maximum number of results to collect before ranking and display.  If not set, default value is max_to_show." },
-  /* 12 */{ "max_length_diff", AINT, FALSE, 0, 999, "Ignore results which are more than X words longer than the input.  If X is greater than 99, the actual value is dynamically set." },
-  /* 13 */{ "timeout_kops", AINT, FALSE, 0, 1000000, "If non zero, sets a timeout limit on number of K-operations performed per query" },
-  /* 14 */{ "timeout_msec", AINT, FALSE, 0, 1000000, "If non zero, sets a timeout limit on elapsed milliseconds per query" },
-  /* 15 */{ "alpha", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of static score" },
-  /* 16 */{ "beta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of phrase feature" },
-  /* 17 */{ "gamma", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of words-in-sequence feature" },
-  /* 18 */{ "delta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of primacy feature" },
-  /* 19 */{ "epsilon", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of excess length feature" },
-  /* 20 */{ "zeta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of BM25 score.  [Experimental: Only implemented for bag-of-words queries thus far.]" },
-  /* 21 */{ "eta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of score derived from geographical distance from the searcher's origin." },
-  /* 22 */{ "theta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of score derived from intervening word count (Only with partial matches)." },
+  /*  6 */{ "file_segment_rules", ASTRING, TRUE, 0, 0, "The name of a file containing regex query segment rules. (Incompat. with index_dir)" },
+  /*  7 */{ "file_query_batch", ASTRING, TRUE, 0, 0, "The name of a file containing queries to be processed. (Incompat. with pq)" },
+  /*  8 */{ "file_output", ASTRING, TRUE, 0, 0, "The name of a file to which output will be written." },
+  /*  9 */{ "file_config", ASTRING, TRUE, 0, 0, "The name of a config file containing additional QBASHQ arguments." },
+  /*  10 */{ "pq", ASTRING, TRUE, 0, 0, "The partial query typed by the user.  If absent, QBASHQ will expect a stream of partial queries from file_query_batch or STDIN" },
+  /* 11 */{ "max_to_show", AINT, TRUE, 0, 1000, "Maximum number of results to display. [Experimental]: Zero activates a special mode which reports a full match count but no results" },
+  /* 12 */{ "max_candidates", AINT, TRUE, 1, 1000, "Maximum number of results to collect before ranking and display.  If not set, default value is max_to_show." },
+  /* 13 */{ "max_length_diff", AINT, FALSE, 0, 999, "Ignore results which are more than X words longer than the input.  If X is greater than 99, the actual value is dynamically set." },
+  /* 14 */{ "timeout_kops", AINT, FALSE, 0, 1000000, "If non zero, sets a timeout limit on number of K-operations performed per query" },
+  /* 15 */{ "timeout_msec", AINT, FALSE, 0, 1000000, "If non zero, sets a timeout limit on elapsed milliseconds per query" },
+  /* 16 */{ "alpha", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of static score" },
+  /* 17 */{ "beta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of phrase feature" },
+  /* 18 */{ "gamma", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of words-in-sequence feature" },
+  /* 19 */{ "delta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of primacy feature" },
+  /* 20 */{ "epsilon", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of excess length feature" },
+  /* 21 */{ "zeta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of BM25 score.  [Experimental: Only implemented for bag-of-words queries thus far.]" },
+  /* 22 */{ "eta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of score derived from geographical distance from the searcher's origin." },
+  /* 23 */{ "theta", AFLOAT, FALSE, 0, 1, "Ranking: Coeff of score derived from intervening word count (Only with partial matches)." },
   
-  /* 23 */{ "chi", AFLOAT, FALSE, 0, 1, "Classification: Weight of degree of match in linear combination to make classification score." },
-  /* 24 */{ "psi", AFLOAT, FALSE, 0, 1, "Classification (lyrics only): Weight of record type (e.g. T, AT, TA) in linear combo to make classification score." },
-  /* 25 */{ "omega", AFLOAT, FALSE, 0, 1, "Classification: Weight of static score in linear combination to make classification score." },
-  /* 26 */{ "auto_partials", ABOOL, FALSE, 0, 0, "If TRUE the last word in pq will be treated as a word prefix (unless followed by a space). (See Note 1.)" },
-  /* 27 */{ "auto_line_prefix", ABOOL, FALSE, 0, 0, "If TRUE a query with no space will be prefixed with '>'. (See Note 2.)" },
-  /* 28 */{ "warm_indexes", ABOOL, FALSE, 0, 0, "If TRUE, QBASHQ will touch all the pages in the indexes before processing a query." },
-  /* 29 */{ "relaxation_level", AINT, FALSE, 0, MAX_RELAX, "To what extent should we relax the requirement of a full-AND match. (How many words can be missing.)" },
-  /* 30 */{ "display_col", AINT, FALSE, -1, 999999, "TSV cols to display instead of col 1, unless absent or empty.  0 -> whole record, -1 -> line number in .forward (from 0).  Up to 3 2-digit cols as in: 130401 means col 13, col 4, col 1" },
-  /* 31 */{ "query_streams", AINT, TRUE, 1, 100, "How many parallel query streams to run." },
-  /* 32 */{ "duplicate_handling", AINT, FALSE, 0, 2, "0 - never eliminate dup.s; 1 - suppress adjacent duplicate display strings from final result ranking; 2 - eliminate all duplicates." },
-  /* 33 */{ "classifier_mode", AINT, FALSE, 0, 4, "0 - Operate normally, not as a classifier; 1 - classify using counts; 2 - classify using idfs." },
-  /* 34 */{ "classifier_threshold", AFLOAT, FALSE, 0, 1, "If classifier_mode > 0 a Yes decision will be made if the score exceeds this value." },
-  /* 35 */{ "classifier_min_words", AINT, FALSE, 0, 100, "If classifier_mode > 0 then a No decision will be made for any query with fewer than this number of words." },
-  /* 36 */{ "classifier_max_words", AINT, FALSE, 1, 255, "If classifier_mode > 0 then a No decision will be made for any query with more than this number of words." },
-  /* 37 */{ "classifier_segment", ASTRING, FALSE, 0, 0, "The name of a segment (lyrics, magic_songs, magic_movie, amazon, wikipedia, academic, carousel) which needs special query treament and scoring (classifier_mode > 0)." },
+  /* 24 */{ "chi", AFLOAT, FALSE, 0, 1, "Classification: Weight of degree of match in linear combination to make classification score." },
+  /* 25 */{ "psi", AFLOAT, FALSE, 0, 1, "Classification (lyrics only): Weight of record type (e.g. T, AT, TA) in linear combo to make classification score." },
+  /* 26 */{ "omega", AFLOAT, FALSE, 0, 1, "Classification: Weight of static score in linear combination to make classification score." },
+  /* 27 */{ "auto_partials", ABOOL, FALSE, 0, 0, "If TRUE the last word in pq will be treated as a word prefix (unless followed by a space). (See Note 1.)" },
+  /* 28 */{ "auto_line_prefix", ABOOL, FALSE, 0, 0, "If TRUE a query with no space will be prefixed with '>'. (See Note 2.)" },
+  /* 29 */{ "warm_indexes", ABOOL, FALSE, 0, 0, "If TRUE, QBASHQ will touch all the pages in the indexes before processing a query." },
+  /* 30 */{ "relaxation_level", AINT, FALSE, 0, MAX_RELAX, "To what extent should we relax the requirement of a full-AND match. (How many words can be missing.)" },
+  /* 31 */{ "display_col", AINT, FALSE, -1, 999999, "TSV cols to display instead of col 1, unless absent or empty.  0 -> whole record, -1 -> line number in .forward (from 0).  Up to 3 2-digit cols as in: 130401 means col 13, col 4, col 1" },
+  /* 32 */{ "query_streams", AINT, TRUE, 1, 100, "How many parallel query streams to run." },
+  /* 33 */{ "duplicate_handling", AINT, FALSE, 0, 2, "0 - never eliminate dup.s; 1 - suppress adjacent duplicate display strings from final result ranking; 2 - eliminate all duplicates." },
+  /* 34 */{ "classifier_mode", AINT, FALSE, 0, 4, "0 - Operate normally, not as a classifier; 1 - classify using counts; 2 - classify using idfs." },
+  /* 35 */{ "classifier_threshold", AFLOAT, FALSE, 0, 1, "If classifier_mode > 0 a Yes decision will be made if the score exceeds this value." },
+  /* 36 */{ "classifier_min_words", AINT, FALSE, 0, 100, "If classifier_mode > 0 then a No decision will be made for any query with fewer than this number of words." },
+  /* 37 */{ "classifier_max_words", AINT, FALSE, 1, 255, "If classifier_mode > 0 then a No decision will be made for any query with more than this number of words." },
   /* 38 */{ "segment_intent_multiplier", AFLOAT, FALSE, 0, 1, "The classifier_threshold will be multiplied by this if segment intent words are detected." },
   /* 39 */{ "classifier_stop_thresh1", AFLOAT, FALSE, 0, 1, "Terminate early if the highest-ranked candidate exceeds this value. (classifier_mode > 0)." },
   /* 40 */{ "classifier_stop_thresh2", AFLOAT, FALSE, 0, 1, "Terminate early if the lowest-ranked of max_to_show candidates exceeds this value. (classifier_mode > 0)." },
@@ -108,7 +108,7 @@ arg_t args[] = {
   /* 54 */{ "chatty", ABOOL, TRUE, 0, 0, "When run in batch mode, default is to print a lot of status information.  if FALSE, most of this will be avoided." },
   /* 55 */{ "lat", AFLOAT, FALSE, -90, 90, "Latitude of the location associated with the searcher." },
   /* 56 */{ "long", AFLOAT, FALSE,-180, 180, "Longitude of the location associated with the searcher" },
-  /* 57*/{ "x_max_span_length", AINT, FALSE, 0, 10000, "When checking for partial words, impose a limit on the no. of intervening words in the matched part of the record" },
+  /* 57 */{ "x_max_span_length", AINT, FALSE, 0, 10000, "When checking for partial words, impose a limit on the no. of intervening words in the matched part of the record" },
   /* 58 */{ "geo_filter_radius", AFLOAT, FALSE, 0, 20038, "Results further than this distance from (lat,long) in km will be filtered out.  No filtering unless value > 0.0 and lat/longs are known for both query and document." },
   /* 59 */{ "street_address_processing", AINT, FALSE, 0, 10000, "if > 0, delete suite part and street number from query. If > 1, reject candidates for which this street number is not valid." },
   /* 60 */{ "street_specs_col", AINT, FALSE, 0, 10000, "The column in the .forward file containing a list specifying valid street numbers for this doc (assumed to be a street)." },
@@ -131,38 +131,38 @@ int initialize_qoenv_mappings(query_processing_environment_t *qoenv) {
   vptra[3] = (void *)&(qoenv->fname_vocab);
   vptra[4] = (void *)&(qoenv->fname_doctable);
   vptra[5] = (void *)&(qoenv->fname_substitution_rules);
-  vptra[6] = (void *)&(qoenv->fname_query_batch);
-  vptra[7] = (void *)&(qoenv->fname_output);
-  vptra[8] = (void *)&(qoenv->fname_config);
-  vptra[9] = (void *)&(qoenv->partial_query);
-  vptra[10] = (void *)&(qoenv->max_to_show);
-  vptra[11] = (void *)&(qoenv->max_candidates_to_consider);
-  vptra[12] = (void *)&(qoenv->max_length_diff);
-  vptra[13] = (void *)&(qoenv->timeout_kops);
-  vptra[14] = (void *)&(qoenv->timeout_msec);
-  vptra[15] = (void *)&(qoenv->rr_coeffs[0]);
-  vptra[16] = (void *)&(qoenv->rr_coeffs[1]);
-  vptra[17] = (void *)&(qoenv->rr_coeffs[2]);
-  vptra[18] = (void *)&(qoenv->rr_coeffs[3]);
-  vptra[19] = (void *)&(qoenv->rr_coeffs[4]);
-  vptra[20] = (void *)&(qoenv->rr_coeffs[5]);
-  vptra[21] = (void *)&(qoenv->rr_coeffs[6]);
-  vptra[22] = (void *)&(qoenv->rr_coeffs[7]);
-  vptra[23] = (void *)&(qoenv->cf_coeffs[0]);
-  vptra[24] = (void *)&(qoenv->cf_coeffs[1]);
-  vptra[25] = (void *)&(qoenv->cf_coeffs[2]);
-  vptra[26] = (void *)&(qoenv->auto_partials);
-  vptra[27] = (void *)&(qoenv->auto_line_prefix);
-  vptra[28] = (void *)&(qoenv->warm_indexes);
-  vptra[29] = (void *)&(qoenv->relaxation_level);
-  vptra[30] = (void *)&(qoenv->displaycol);
-  vptra[31] = (void *)&(qoenv->query_streams);
-  vptra[32] = (void *)&(qoenv->duplicate_handling);
-  vptra[33] = (void *)&(qoenv->classifier_mode);
-  vptra[34] = (void *)&(qoenv->classifier_threshold);
-  vptra[35] = (void *)&(qoenv->classifier_min_words);
-  vptra[36] = (void *)&(qoenv->classifier_max_words);
-  vptra[37] = (void *)&(qoenv->classifier_segment);
+  vptra[6] = (void *)&(qoenv->fname_segment_rules);
+  vptra[7] = (void *)&(qoenv->fname_query_batch);
+  vptra[8] = (void *)&(qoenv->fname_output);
+  vptra[9] = (void *)&(qoenv->fname_config);
+  vptra[10] = (void *)&(qoenv->partial_query);
+  vptra[11] = (void *)&(qoenv->max_to_show);
+  vptra[12] = (void *)&(qoenv->max_candidates_to_consider);
+  vptra[13] = (void *)&(qoenv->max_length_diff);
+  vptra[14] = (void *)&(qoenv->timeout_kops);
+  vptra[15] = (void *)&(qoenv->timeout_msec);
+  vptra[16] = (void *)&(qoenv->rr_coeffs[0]);
+  vptra[17] = (void *)&(qoenv->rr_coeffs[1]);
+  vptra[18] = (void *)&(qoenv->rr_coeffs[2]);
+  vptra[19] = (void *)&(qoenv->rr_coeffs[3]);
+  vptra[20] = (void *)&(qoenv->rr_coeffs[4]);
+  vptra[21] = (void *)&(qoenv->rr_coeffs[5]);
+  vptra[22] = (void *)&(qoenv->rr_coeffs[6]);
+  vptra[23] = (void *)&(qoenv->rr_coeffs[7]);
+  vptra[24] = (void *)&(qoenv->cf_coeffs[0]);
+  vptra[25] = (void *)&(qoenv->cf_coeffs[1]);
+  vptra[26] = (void *)&(qoenv->cf_coeffs[2]);
+  vptra[27] = (void *)&(qoenv->auto_partials);
+  vptra[28] = (void *)&(qoenv->auto_line_prefix);
+  vptra[29] = (void *)&(qoenv->warm_indexes);
+  vptra[30] = (void *)&(qoenv->relaxation_level);
+  vptra[31] = (void *)&(qoenv->displaycol);
+  vptra[32] = (void *)&(qoenv->query_streams);
+  vptra[33] = (void *)&(qoenv->duplicate_handling);
+  vptra[34] = (void *)&(qoenv->classifier_mode);
+  vptra[35] = (void *)&(qoenv->classifier_threshold);
+  vptra[36] = (void *)&(qoenv->classifier_min_words);
+  vptra[37] = (void *)&(qoenv->classifier_max_words);
   vptra[38] = (void *)&(qoenv->segment_intent_multiplier);
   vptra[39] = (void *)&(qoenv->classifier_stop_thresh1);
   vptra[40] = (void *)&(qoenv->classifier_stop_thresh2);
@@ -199,6 +199,7 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->fname_vocab = NULL;
   qoenv->fname_doctable = NULL;
   qoenv->fname_substitution_rules = NULL;
+  qoenv->fname_segment_rules = NULL;
   qoenv->fname_query_batch = NULL;
   qoenv->fname_output = NULL;
   qoenv->partial_query = NULL;
@@ -230,7 +231,6 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->classifier_threshold = 0.75;
   qoenv->classifier_min_words = 0;
   qoenv->classifier_max_words = 255;
-  qoenv->classifier_segment = NULL;
   qoenv->segment_intent_multiplier = 1.0;
   qoenv->classifier_stop_thresh1 = 1.0;
   qoenv->classifier_stop_thresh2 = 1.0;
@@ -260,6 +260,7 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->report_match_counts_only = FALSE;
   qoenv->query_output = stdout;
   qoenv->substitutions_hash = NULL;
+  qoenv->segment_rules_hash = NULL;
 
   // Setting up for statistics recording for the batch of queries run with these options
   qoenv->inthebeginning = what_time_is_it();  //Probably not in the right place. Reset in QBASHQ.c

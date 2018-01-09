@@ -14,7 +14,7 @@ $|++;
 $idxdir = "../test_data";
 $tqdir = "../test_queries";
 
-$base_opts = "-classifier_segment=lyrics -classifier_mode=2 -query_streams=1";  
+$base_opts = "-classifier_mode=2 -query_streams=1";  
 
 $outfile = "tmp_timeout.out";
 

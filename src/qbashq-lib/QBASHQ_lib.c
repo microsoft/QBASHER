@@ -2444,6 +2444,7 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
   // Returns the number of query words or a negative error code.
   u_char *q, *term_start, saveq;
   size_t len;
+  BOOL explain = (qoenv->debug >= 1);
 
   // Make a lower cased copy of the query text.
   if (0) printf("Before lowering: '%s'\n", qex->query);
@@ -2470,22 +2471,6 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
 	     q, qex->query);
   }
 
-  if (qoenv->use_substitutions) {
-    // Applying substitutions to the query but not if it already contains operators.  Stop if
-    // a substitution rule has introduced an operator.
-    apply_substitutions_rules_to_string(qoenv->substitutions_hash, qoenv->language,
-					q, TRUE, FALSE, qoenv->debug);
-    if (qoenv->display_parsed_query)
-      printf("Query after application of %s substitutions is {%s}; Original query was {%s}\n",
-	     qoenv->language, q, qex->query);
-  }
-
-  normalize_delimiters(q,  // query string
-		       (qoenv->classifier_mode || (!qoenv->auto_partials && !qoenv->auto_line_prefix)),
-		       ascii_non_tokens, qoenv->debug);
-  if (qoenv->display_parsed_query) printf("Query after normalize_delimiters is {%s}; Original query was {%s}.\n",
-					  q, qex->query);
-
 
   if (qoenv->auto_line_prefix) {
     // Must do this before slash prefixing because prefix_last_word_with_slash()
@@ -2498,39 +2483,24 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
                                                    // there are more than one.
   }
 
-  if (qoenv->classifier_mode && qoenv->classifier_segment != NULL) {
+  if (qoenv->classifier_mode) {
     int yes = 0;
 
     // Remember, the query referenced by q has been lower-cased, has had non-operator punctuation removed,
     // has had leading and trailing blanks removed, and is null-terminated.
-    if (!strcmp((char *)qoenv->classifier_segment, "lyrics")) {
-      yes = apply_lyrics_specific_rules((char *)q);
-    }
-    else if (!strcmp((char *)qoenv->classifier_segment, "magic_songs")) {
-      yes = apply_magic_songs_specific_rules((char *)q);
-    }
-    else if (!strcmp((char *)qoenv->classifier_segment, "magic_movie")) {
-      yes = apply_magic_movie_specific_rules((char *)q);
-    }
-    else if (!strcmp((char *)qoenv->classifier_segment, "academic")) {
-      yes = apply_academic_specific_rules((char *)q);
-    }
-    else if (!strcmp((char *)qoenv->classifier_segment, "wikipedia")) {
-      yes = apply_wikipedia_specific_rules((char *)q);
-    }
-    else if (!strcmp((char *)qoenv->classifier_segment, "amazon")) {
-      yes = apply_amazon_specific_rules((char *)q);
-    }
-    else if (!strcmp((char *)qoenv->classifier_segment, "carousel")) {
-      yes = apply_carousel_specific_rules((char *)q);
-    }
 
+    if (qoenv->segment_rules_hash != NULL) {
+      if (explain) printf("Applying segment rules\n");
+      yes = apply_substitutions_rules_to_string(qoenv->segment_rules_hash, qoenv->language,
+						q, TRUE, TRUE, qoenv->debug);
+    }
+    
     if (yes) {
       qex->vertical_intent_signaled = TRUE;
       qex->segment_intent_multiplier = qoenv->segment_intent_multiplier;
       if (qoenv->debug >= 1)
-	printf("Vertical intent signaled: %s.  Modified query is {%s}; Original query was {%s}. s_i_m = %.4f\n",
-	       qoenv->classifier_segment, q, qex->query, qex->segment_intent_multiplier);
+	printf("Segment intent signaled.  Modified query is {%s}; Original query was {%s}. s_i_m = %.4f\n",
+	       q, qex->query, qex->segment_intent_multiplier);
     }
     else if (qoenv->debug >= 1) printf("No explicit vertical intent signal.\n");
 
@@ -2539,13 +2509,26 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
       // but I guess you don't keep that around?!
       // (Instead the parsed query is placed directly into a structured query.)
       // Also this version isn't useful unless only a single thread is run in parallel (-query_streams=1)
-      if (qoenv->classifier_segment != NULL) {
-	printf("Query after application of classifier rules for {%s} is {%s}; Original query was {%s}\n", qoenv->classifier_segment, q, qex->query);
-      } else {
-	printf("Query after application of classifier rules is {%s}; Original query was {%s}\n", q, qex->query);
-      }
+      printf("Query after application of classifier rules is {%s}; Original query was {%s}\n", q, qex->query);
     }
   }
+
+    if (qoenv->use_substitutions) {
+    // Applying substitutions to the query but not if it already contains operators.  Stop if
+    // a substitution rule has introduced an operator.
+       if (explain) printf("Applying general substitution rules\n");
+       apply_substitutions_rules_to_string(qoenv->substitutions_hash, qoenv->language,
+					   q, TRUE, FALSE, qoenv->debug);
+       if (qoenv->display_parsed_query)
+	 printf("Query after application of %s substitutions is {%s}; Original query was {%s}\n",
+		qoenv->language, q, qex->query);
+  }
+
+  normalize_delimiters(q,  // query string
+		       (qoenv->classifier_mode || (!qoenv->auto_partials && !qoenv->auto_line_prefix)),
+		       ascii_non_tokens, qoenv->debug);
+  if (qoenv->display_parsed_query) printf("Query after normalize_delimiters is {%s}; Original query was {%s}.\n",
+					  q, qex->query);
 
 
   strncpy((char *)qex->query_as_processed, (char *)q, MAX_QLINE);
@@ -3069,15 +3052,17 @@ static u_char *check_if_header(index_environment_t *ixenv, query_processing_envi
 
 static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
 					index_environment_t *ixenv,
-					u_char *index_path, size_t stemlen,
+					u_char *index_stem, size_t stemlen,
 					BOOL verbose, BOOL run_tests,
 					int *error_code) {
-  // This version of the function is used in Case 1, where an index_dir is specified 
-  // Open all four QBASH index files and read them into memory.  Return pointers to the memory blocks and the sizes.
+  // This version of the function is used in Case 1, where an index_dir is specified. index_stem
+  // comprises <index_dir>/QBASH, and has room to append up to 29 characters.
+  // Open all four QBASH index files and read them into memory.  Return pointers to the
+  // memory blocks and the sizes.
   // Stem is usually "QBASH".
-  u_char *fname = index_path, *suffix, *other_token_breakers = NULL, *version, unknown[] = "<unknown>";
+  u_char *fname = index_stem, *suffix, *other_token_breakers = NULL, *version, unknown[] = "<unknown>";
 
-  suffix = index_path + stemlen;
+  suffix = index_stem + stemlen;
 
   strcpy((char *)suffix, ".forward");
   ixenv->forward = (byte *)mmap_all_of(fname, &(ixenv->fsz), verbose, &(ixenv->forward_H),
@@ -3096,13 +3081,18 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
 					&(ixenv->doctable_MH), error_code);
   if (*error_code < 0) return NULL;  // -------------------------------->
 
-	
-  if (qoenv->use_substitutions)
-    load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
-			    &qoenv->substitutions_hash, qoenv->debug);
+  if (qoenv->use_substitutions) {
+    strcpy((char *)suffix, ".substitution_rules");
+    load_substitution_rules(fname, &qoenv->substitutions_hash, qoenv->debug);
+  }
 
+  if (qoenv->classifier_mode != 0) {
+    strcpy((char *)suffix, ".segment_rules");
+    if (0) printf("Attempting to load segment rules from index_dir\n");
+    load_substitution_rules(fname, &(qoenv->segment_rules_hash), qoenv->debug);
+  }
 
-  version = check_if_header(ixenv, qoenv, &other_token_breakers, index_path, error_code);
+  version = check_if_header(ixenv, qoenv, &other_token_breakers, index_stem, error_code);
  
   // Now setup ascii_non_tokens (defined and zeroed in unicode.c)
   initialize_ascii_non_tokens((u_char *)QBASH_META_CHARS, FALSE);
@@ -3115,7 +3105,7 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
     display_ascii_non_tokens();
     test_normalize_delimiters(ascii_non_tokens);
     fprintf(qoenv->query_output, "Case 1: indexes loaded from %s.  Index written by %s being read by %s%s\n",
-	    index_path, version, INDEX_FORMAT, QBASHER_VERSION);
+	    index_stem, version, INDEX_FORMAT, QBASHER_VERSION);
   }
   if (run_tests) {
     *error_code = test_doctable_n_forward(ixenv->doctable, ixenv->forward,
@@ -3176,8 +3166,16 @@ static u_char *open_and_check_index_set_aether(query_processing_environment_t *q
 
 
   if (qoenv->use_substitutions && qoenv->fname_substitution_rules != NULL) 
-    load_substitution_rules(qoenv->fname_substitution_rules, qoenv->index_dir,
+    load_substitution_rules(qoenv->fname_substitution_rules, 
 			    &(qoenv->substitutions_hash), qoenv->debug);
+
+  if (qoenv->classifier_mode != 0 && qoenv->fname_segment_rules != NULL) {
+    if (0) printf("Attempting to load segment rules from explicit filename\n");
+    load_substitution_rules(qoenv->fname_segment_rules,
+			    &(qoenv->segment_rules_hash), qoenv->debug);
+  }
+
+
 
   // Now setup ascii_non_tokens (defined and zeroed in unicode.c)
   initialize_ascii_non_tokens((u_char *)QBASH_META_CHARS, FALSE);
@@ -3994,6 +3992,7 @@ static int split_filelist_arg(query_processing_environment_t *qoenv, u_char *pFi
       else if (!strcmp((char *)name + (len - 3), ".if")) qoenv->fname_if = name;
       else if (!strcmp((char *)name + (len - 7), ".config")) qoenv->fname_config = name;
       else if (!strcmp((char *)name + (len - 19), ".substitution_rules")) qoenv->fname_substitution_rules = name;
+      else if (!strcmp((char *)name + (len - 19), ".segment_rules")) qoenv->fname_segment_rules = name;
       else if (!strcmp((char *)name + (len - 12), ".query_batch")) qoenv->fname_query_batch = name;
       else if (!strcmp((char *)name + (len - 7), ".output")) qoenv->fname_output = name;
       else {
@@ -4198,7 +4197,7 @@ index_environment_t *load_indexes(query_processing_environment_t *qoenv, BOOL ve
 
   if (qoenv->index_dir != NULL) {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - Case 1 - - - - - - - - - - - - - - - - - - - - - - - - - -
-    u_char  *index_path;
+    u_char  *index_stem;
     size_t idplen, stemlen;
     idplen = strlen((char *)qoenv->index_dir);
 
@@ -4206,23 +4205,23 @@ index_environment_t *load_indexes(query_processing_environment_t *qoenv, BOOL ve
 
     // Malloc space for longest file path =
     //  strlen(index_directory_path) + strlen("/0/") + strlen("QBASH.doctable");   // 17 extra chars
-    index_path = (u_char *)malloc(idplen + 20);    // MAL800
-    if (index_path == NULL) {
+    index_stem = (u_char *)malloc(idplen + 30);    // MAL800
+    if (index_stem == NULL) {
       free(ixenv);
       *error_code = -220063;
       return NULL;
     }
-    strcpy((char *)index_path, (char *)qoenv->index_dir);
+    strcpy((char *)index_stem, (char *)qoenv->index_dir);
 
-    strcpy((char *)index_path + idplen + 3, "QBASH");
+    strcpy((char *)index_stem + idplen + 3, "QBASH");
     stemlen = idplen + 3 + 5;  // 3 for \.\  and 5 for QBASH
-    index_path[idplen] = '/';
+    index_stem[idplen] = '/';
 
     if (verbose) fprintf(qoenv->query_output, "Falling back to single QBASH.* index\n");
-    strcpy((char *)index_path + idplen, "/QBASH");
+    strcpy((char *)index_stem + idplen, "/QBASH");
     stemlen = idplen + 6;
-    other_token_breakers = open_and_check_index_set(qoenv, ixenv, index_path, stemlen, verbose, run_tests, error_code);
-    free(index_path);  // FRE800
+    other_token_breakers = open_and_check_index_set(qoenv, ixenv, index_stem, stemlen, verbose, run_tests, error_code);
+    free(index_stem);  // FRE800
     if (other_token_breakers != NULL) {
       if (ixenv->other_token_breakers == NULL) ixenv->other_token_breakers = other_token_breakers;
     }
@@ -4298,6 +4297,10 @@ void unload_query_processing_environment(query_processing_environment_t **qoenvp
     if (qoenv->substitutions_hash != NULL) {
       unload_substitution_rules(&qoenv->substitutions_hash, qoenv->debug);
     }
+    if (qoenv->segment_rules_hash != NULL) {
+      unload_substitution_rules(&qoenv->segment_rules_hash, qoenv->debug);
+    }
+    
   }
 #ifdef WIN64
   if (report_final_memory_usage) report_memory_usage(qoenv->query_output, "at the very end", NULL);

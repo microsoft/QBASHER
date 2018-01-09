@@ -337,7 +337,7 @@ sub results_are_in_descending_score_order {
 
 sub check_results_format {
     my $err_cnt = 0;
-    my $opts = "-classifier_mode=1 -classifier_segment=lyrics -classifier_threshold=0.9 -display_col=3 -extra_col=4 -duplicate_handling=0";
+    my $opts = "-classifier_mode=1 -classifier_threshold=0.9 -display_col=3 -extra_col=4 -duplicate_handling=0";
     my $base_cmd = "$qp index_dir=$ix[0] $opts";
     print "\n\nChecking results format\n";
     
@@ -394,7 +394,7 @@ sub check_results_format {
 
     # Check output of extra features
 
-    $opts = "-classifier_mode=1 -classifier_segment=lyrics -classifier_threshold=0.9 -display_col=3 -extra_col=4 -include_extra_features=true -duplicate_handling=0";
+    $opts = "-classifier_mode=1 -classifier_threshold=0.9 -display_col=3 -extra_col=4 -include_extra_features=true -duplicate_handling=0";
     $base_cmd = "$qp index_dir=$ix[0] $opts";
     print "\n\nChecking results format with extra features\n";
     $cmd = "$base_cmd  -pq=\"the effect of gamma rays on man in the moon marigolds\"";
@@ -417,7 +417,7 @@ sub check_results_format {
     # the score is in two components.  The first 2 digits represent the degree of
     # lexical match truncated to two digits.  The rest of the digits represent the
     # static score shifted right by two places.
-    $opts = "-classifier_mode=1 -classifier_segment=lyrics -classifier_threshold=0.1 -display_col=3 -extra_col=4  -include_result_details=FALSE -max_to_show=1 -duplicate_handling=0";
+    $opts = "-classifier_mode=1 -classifier_threshold=0.1 -display_col=3 -extra_col=4  -include_result_details=FALSE -max_to_show=1 -duplicate_handling=0";
     $base_cmd = "$qp index_dir=$ix[0] $opts";
     print "\n\nChecking effect of omega\n";
     $cmd = "$base_cmd  -pq=\"ballad a thin man\"";
@@ -449,44 +449,13 @@ sub check_results_format {
 	exit(1) if $fail_fast;
     }
 
-    if (0) {
-
-	# Unfortunately psi can't be tested with the Wikipedia data set.
-	$opts = "-classifier_mode=1 -classifier_segment=lyrics -classifier_threshold=0.1 -display_col=3 -extra_col=4  -include_result_details=TRUE -max_to_show=1 -duplicate_handling=0";
-	$base_cmd = "$qp index_dir=$ix[0] $opts";
-	print "\n\nChecking effect of psi\n";
-	$cmd = "$base_cmd  -pq=\"swing low sweet chariot\"";
-	print $cmd, "\n";
-	$rslts = `$cmd`;
-	print $rslts;
-	if ($rslts =~ m@e8f8158b-9157-cb40-6d7f-402895ba45b0\s*\t\s*L\s*\t@) {
-	    print "\n                                                               [PASS]\n\n";
-	} else {
-	    print "                                                               [FAIL]\n\n";
-	    $err_cnt++;
-	    exit(1) if $fail_fast;
-	}
-	$cmd = "$base_cmd -psi=1 -pq=\"swing low sweet chariot\"";
-	print $cmd, "\n";
-	$rslts = `$cmd`;
-	print $rslts;
-	if ($rslts =~ m@64c09422-625e-0802-1d4c-18c9555815e9\s*\t\s*T\s*\t@) {
-	    print "\n                                                               [PASS]\n\n";
-	} else {
-	    print "                                                               [FAIL]\n\n";
-	    $err_cnt++;
-	    exit(1) if $fail_fast;
-	}
-    }
-
-
     return $err_cnt;
 }
 
 
 sub check_early_termination {
     my $err_cnt = 0;
-    my $opts = "-classifier_mode=1 -classifier_segment=lyrics -classifier_threshold=0.70 -display_col=1 -duplicate_handling=0";
+    my $opts = "-classifier_mode=1 -classifier_threshold=0.70 -display_col=1 -duplicate_handling=0";
     my $base_cmd = "$qp index_dir=$ix[0] $opts -pq=\"united states elections\"";
     my $cmd = "$base_cmd -max_to_show=1000";
     print "\n\nChecking early termination mechanisms ...\n";
@@ -674,7 +643,7 @@ sub check_early_termination {
 
 
     print "\n      ------------------- With relaxation and dud query ------------------------\n";
-    $opts = "-classifier_mode=1 -classifier_segment=lyrics -classifier_threshold=0.4224 -display_col=1 -duplicate_handling=0";
+    $opts = "-classifier_mode=1 -classifier_threshold=0.4224 -display_col=1 -duplicate_handling=0";
     $base_cmd = "$qp index_dir=$ix[0] $opts -relaxation_level=1 -pq=\"xxxxxx united states elections\"";
     $cmd = "$base_cmd -max_to_show=100";
     #print $cmd, "\n";

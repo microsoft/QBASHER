@@ -1986,7 +1986,7 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     developer2's substitution_rules file had CR NL rather than just NL
     and that that was the cause of the problem. Fixing that now.
 
-*** v1.5.126-OS developer1 05 Jan 2017 *** 
+*** v1.5.126-OS developer1 08 Jan 2017 *** 
     1. Change to read QBASH.substitution_rules rather than
        QBASH.substitution_rules_<language>.
     2. In assign_one_arg() check that the length of a value supplied
@@ -2007,5 +2007,19 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        in query processing output.
        
 	  
-     
+*** v1.5.127-OS developer1 10 Jan 2017 ***
+    1. Removing classifier_segment option (Segment rules will be
+       applied if classifier_mode != 0 AND QBASH.segment_rules exists
+    2. Removing /ifdeffing out the hard-coded segment rules
+    3. Producing QBASH.segment_rules files to match the former
+       hard-coded rules.
+    4. Modifications to allow QBASH.segment-rules to be loaded using
+       same data structures and functions as QBASH.substitution_rules
+    5. Code to load the segment rules.
+    6. Change the order of application of segment_rules and
+       substitution_rules.  The former should come first, otherwise
+       segment intent rules might be mangled before they can be
+       recognized.
+    7. Checking (using a MSFT-internal test) that segment_rules and
+       substitution rules work in combination.
     

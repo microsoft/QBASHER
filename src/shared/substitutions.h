@@ -18,7 +18,7 @@ typedef struct {  // These are the values in the substitutions hash table
   
 void unload_substitution_rules(dahash_table_t **substitutions_hash, int debug);
 
-int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t **substitutions_hash, int debug);
+int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash, int debug);
 
 int apply_substitutions_rules_to_string(dahash_table_t *sash, u_char *language,
 					u_char *intext, BOOL avoid_operators_in_subject,

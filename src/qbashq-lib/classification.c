@@ -23,6 +23,8 @@
 #include "QBASHQ.h"
 #include "classification.h"
 
+#if 0  //  Slated for removal
+
 static char *lyrics_prefixes[] =
   {
     "printable ",
@@ -311,36 +313,7 @@ int apply_magic_songs_specific_rules(char *qstring) {
 }
 
 
-int apply_magic_movie_specific_rules(char *qstring){
-  int yes = 0;
-  yes = substitute((u_char *)qstring, (u_char *)"movie about", (u_char *)"", NULL, FALSE);
-  if (!yes) yes = substitute((u_char *)qstring, (u_char *)"movie that", (u_char *)"", NULL, FALSE);
-
-  if (yes) {
-    // We know it's a magic_movie, apply Developer2's query treatments....
-  }
-
-  return yes;
-}
-
-
-int apply_academic_specific_rules(char *qstring){
-  int yes = 0;
-  return yes;
-}
-
-
-int apply_wikipedia_specific_rules(char *qstring){
-  int yes = 0;
-  return yes;
-}
-
-
-int apply_amazon_specific_rules(char *qstring){
-  int yes = 0;
-  return yes;
-}
-
+#endif
 
 void classifier_validate_settings(query_processing_environment_t *local_qenv, book_keeping_for_one_query_t *qex) {
   // Various combinations of options don't make sense when operating as a classifier.  Let's make sure
@@ -1048,6 +1021,7 @@ static u_char *code_flags_and_terms_which_matched(query_processing_environment_t
       && (!qex->vertical_intent_signaled)
       && (candy->match_flags & MF_FULL_EXACT)) {
 
+#if 0   // Temporary disabled while effecting large scale changes in 1.5.127-OS
     // Currently only defined for classifier_segment lyrics
     if (!strcmp((char *)local_qenv->classifier_segment, "lyrics")) { 
       strcpy((char *)w, "JO: ");
@@ -1057,6 +1031,7 @@ static u_char *code_flags_and_terms_which_matched(query_processing_environment_t
       strcpy((char *)w, " lyrics");
       w += 7;
     }
+#endif
   } else {
     // Go round the query terms again and copy the term strings in
     bit_selector = 1 << (qex->qwd_cnt - 1);

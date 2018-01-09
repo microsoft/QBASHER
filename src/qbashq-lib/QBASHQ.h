@@ -147,8 +147,8 @@ typedef struct {
   BOOL auto_partials, auto_line_prefix, warm_indexes, display_parsed_query, x_show_qtimes,
     x_batch_testing, chatty;
   u_char *partial_query, *index_dir, *fname_forward, *fname_if, *fname_doctable, *fname_vocab,
-    *fname_query_batch, *fname_output, *fname_config, *fname_substitution_rules, *object_store_files,
-    *language, *classifier_segment;
+    *fname_query_batch, *fname_output, *fname_config, *fname_substitution_rules,
+    *fname_segment_rules, *object_store_files, *language;
   double rr_coeffs[NUM_COEFFS], cf_coeffs[NUM_CF_COEFFS], classifier_threshold;
   int relaxation_level, max_to_show, max_candidates_to_consider, max_length_diff, 
     timeout_kops, timeout_msec, displaycol, extracol, query_streams, duplicate_handling,
@@ -165,10 +165,11 @@ typedef struct {
   // program -- see msdn.microsoft.com/en-us/library/ms235460
   // By default this is the library's stdout
 
-  // ---- Substitution rules are read from a TSV file, such as QBASH.substitution_rules_FR where FR is the language.
+  // ---- Substitution rules are read from a TSV file, such as QBASH.substitution_rules.
+  // ---- Segment rules are also read from a TSV file, such as QBASH.segment_rules.
   BOOL use_substitutions, include_result_details, include_extra_features, allow_per_query_options,
     generate_JO_path, conflate_accents;
-  dahash_table_t *substitutions_hash;  
+  dahash_table_t *substitutions_hash, *segment_rules_hash;  
 
   // ---- Statistics recorded across the batch of queries run with this set of options
   double inthebeginning;

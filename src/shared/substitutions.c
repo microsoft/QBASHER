@@ -145,9 +145,8 @@ static void create_arrays_for_rule_set(rule_set_t *rs, int num_rules) {
 
 
 
-int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t **substitutions_hash, int debug) {
-  // If qoenv->fname_substitution_rules is defined, then attempt to load that file, otherwise 
-  // look for a file QBASH.substitution_rules in the index_dir
+int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash, int debug) {
+  // Attempt to load the srfname file.
   // If not found, return 0, otherwise expect to find lines of the form <LHS> TAB <RHS> TAB <language code>
   // in the file and return a count of the rules found, or a negative error code
   lang_specific_rules_t *lsr;
@@ -156,61 +155,24 @@ int load_substitution_rules(u_char *srfname, u_char *index_dir, dahash_table_t *
     lang_code[3];
   off_t table_off;
   byte *hep;  // Hash entry pointer
-  size_t dirlen, rulesfile_size, patlen = 0, rhslen = 0, error_offset;
+  size_t rulesfile_size, patlen = 0, rhslen = 0, error_offset;
   CROSS_PLATFORM_FILE_HANDLE H;
   HANDLE MH;
   int error_code = 0, lncnt = 0, fldcnt, rule, rules_with_operators_in_RHS = 0, e;
   BOOL explain = (debug >= 1);
 
-  if (srfname != NULL) {
-    if (!exists((char *)srfname, "")) {
-      return 0;  // ----------------------------------------------------->
-    }
-    if (explain) printf("Loading substitution_rules from %s\n", srfname);
-    fflush(stdout);
-    rulesfile_in_mem = (u_char *)mmap_all_of(srfname, &rulesfile_size, FALSE, &H, &MH, &error_code);
-    if (explain) printf("Loaded substitution_rules from %s.  Error code is %d\n", srfname, error_code);
-    fflush(stdout);
-
-    if (error_code) return error_code;
-  } else {
-    char *tfn = NULL, katter[30];
-
-    if (index_dir == NULL) {
-      if (explain) printf("  Substitutions file can't be loaded because index_dir isn't defined.\n");
-      return 0;  // ----------------------------------------->
-    }
-    else  {
-      // The index_dir is defined
-      strcpy(katter, "QBASH.substitution_rules");  // That string is 24 chars long
-      dirlen = strlen((char *)index_dir);
-      tfn = (char *)malloc(dirlen + 30);
-      if (tfn == NULL) {
-	if (explain) printf("  Substitutions file can't be loaded because malloc failed.\n");
-	return 0;  // ----------------------------------------->
-      }
-      strcpy(tfn, (char *)index_dir);
-      if (tfn[dirlen - 1] != SLASH) {
-	tfn[dirlen++] = SLASH;
-	tfn[dirlen] = 0;
-      }
-			
-      if (!exists((char *)tfn, katter)) {
-	if (explain) printf("  Substitutions file %s%s doesn't exist.\n", tfn, katter);
-	return 0;  // ----------------------------------------------------->
-      }
-    }
-    // We've found the file.  Create it's name and memory map it.
-    if (explain) printf("Loading substitution rules from %s%s\n", tfn, katter);
-    strcpy(tfn + dirlen, katter);
-
-    rulesfile_in_mem = (u_char *)mmap_all_of((u_char *)tfn, &rulesfile_size, FALSE, &H, &MH, &error_code);
-    if (error_code) {
-      if (explain) printf("  Substitutions file %s can't be mmapped.\n", tfn);
-      return error_code;  // ----------------------------------------------------->
-    }
-    free(tfn);
+  if (srfname == NULL) return 0; // ----------------------------------------------------->
+  
+  if (!exists((char *)srfname, "")) {
+    if (explain) printf("load_substitution_rules() - file %s not found\n", srfname);
+    return 0;  // ----------------------------------------------------->
   }
+  if (explain) printf("Loading substitution_rules from %s\n", srfname);
+  fflush(stdout);
+  rulesfile_in_mem = (u_char *)mmap_all_of(srfname, &rulesfile_size, FALSE, &H, &MH, &error_code);
+  if (explain) printf("Loaded substitution_rules from %s.  Error code is %d\n", srfname, error_code);
+  fflush(stdout);
+
 
   // Create a dynamic hash table with initially 8 entries and with a key length of 2 bytes
   // (The terminating null is allowed for.
@@ -458,10 +420,11 @@ int apply_substitutions_rules_to_string(dahash_table_t *sash, u_char *language,
 
   p2md = pcre2_match_data_create(10, NULL);  // Allow for up to ten different capturing sub-patterns
 
-  if (p2md == NULL) return 0;   // Maybe this should be an error?
+  if (p2md == NULL) return 0;   // Maybe this should be an error?  
 
-  if (debug >= 1)
-    printf("apply_substitions_to_query_text(%s) called.  %d rules\n", intext, rs->num_substitution_rules);
+  if (explain)
+    printf("apply_substitions_to_query_text(%s) called for language %s.  %d rules\n",
+	   intext, language, rs->num_substitution_rules);
 
 
   // Try all the substitution rules
