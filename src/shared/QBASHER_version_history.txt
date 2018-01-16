@@ -2023,3 +2023,10 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     7. Checking (using a MSFT-internal test) that segment_rules and
        substitution rules work in combination.
     
+*** v1.5.128-OS developer1 16 Jan 2017 ***
+    1. Improving the comment above handle_multi_query() in
+       qbashq-lib/QBASHQ_lib.c
+    2. Adding the ability to include comments (# introducer) in
+       substitution_rules and segment_rules files.  Either a line
+       by itself or in the third field after the language code.
+       

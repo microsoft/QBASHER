@@ -3143,7 +3143,7 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
 static u_char *open_and_check_index_set_aether(query_processing_environment_t *qoenv, index_environment_t *ixenv,
 					       BOOL verbose, BOOL run_tests, int *error_code) {
   // ********* NOTE: This version is used in ObjectStore as well as via Aether ***********
-  // Open all four QBASH index files and read them into memory.  Return pointers to the memory blocks and the sizes.
+  // Open allQBASH index files and read them into memory.  Return pointers to the memory blocks and the sizes.
   // Stem is either "QBASH" or "x/QBASH" where x is a single digit character.
   u_char *other_token_breakers = NULL;
 
@@ -3602,11 +3602,11 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
 }
 
 
-// For lyrics and other query-classification projects, it is proposed
-// that we modify the QBASHER query processor DLL to support
-// multi-queries.  A multi-query comprises a small set of queries,
+// For lyrics and other query-classification projects, we modified
+// the QBASHER query processor DLL to support multi-queries.  
+// A multi-query is expected to comprise a small set of queries,
 // each with different lexical forms and/or different processing
-// options, but all with the same intent.  In a typical scenario there
+// options, but all with the same intent.  In an envisaged scenario there
 // might be a raw, user-typed query, a spelling-corrected version, and
 // two query rewrites.  In some scenarios all of the queries may be
 // run.  In others, the first query is always run but whether
@@ -3627,17 +3627,22 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
 //
 // <qTermChar> ::= \n|RS
 //
-// # <query> is a UTF-8 string containing no ASCII controls <options>
-// #  and <weight> may be empty strings.  <options> are QBASHER
-// #  per-query options <weight> is a decimal fraction between 0 and 1
-// #  <post-query-test> can be either a test of how many results (N)
-// #  have been found so far, e.g. "N<5" or to the highest score (H)
-// #  so far achieved, e.g. "H<0.95".  The only relational operator to
-// #  be implemented in the initial version is < (less than) and the
-// #  only quantities able to be tested are H and N.  <qTermChar> - RS
-// #  is the ASCII record separator character ctrl-^ (0x1E).  Use of
-// #  \n improves readability, but QBASHQ query batches are expected
-// #  to be \n-terminated.
+// <query> is a UTF-8 string containing no ASCII controls <options>
+//   and <weight> may be empty strings.
+// <options> are QBASHER per-query options -- Note that these will
+//   be ignored unless allow_per_query_options=TRUE.
+// <weight> is a decimal fraction between 0 and 1 which is used
+//   to scale scores of documents retrieved by this variant.
+// <post-query-test> can be either a test of how many results (N)
+//   have been found so far, e.g. "N<5" or to the highest score (H)
+//   so far achieved, e.g. "H<0.95".  The only relational operator to
+//   be implemented in the initial version is < (less than) and the
+//   only quantities able to be tested are H and N.  If there is no
+//   post-query-test, the next variant will always be run.
+// <qTermChar> - RS is the ASCII record separator character ctrl-^
+//   (0x1E).  Use of the alternative \n (ASCII linefeed) 
+//   improves readability, but can't be used when runnng batches
+//   of queries through QBASHQ.
 //  
 //
 // Some MQS examples:
@@ -3646,7 +3651,7 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
 //   Lucie in the sky with dimends\n
 //   NUL # a single query with no weight (1.0 assumed), no query-specific
 //   options and no post-query-test.  (The interpreter will tolerate
-// the lack of a final \n).
+//   the lack of a final \n).
 //
 // All variants are run:
 //   Lucie in the sky with dimends\n

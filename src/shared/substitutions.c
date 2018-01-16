@@ -185,12 +185,17 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
   // ---------------------------------------------------------------------------------------
   p = rulesfile_in_mem;
   current_field = p;
+  line_start = p;
   fldcnt = 1;
   while (p < rulesfile_in_mem + rulesfile_size) {
     if (*p == '\t') {
       fldcnt++;
       current_field = p + 1;
-    } else if (*p == '\n') {  // This works for both Unix and Windows line termination.
+    } else if (*p == '#' || *p == '\n') {    // \n works for both Unix and Windows line termination.
+      if (*p == '#') {
+	// The rest of this line is a comment.  Skip forward to '\n' or EOF and process as end of line
+	while (p < rulesfile_in_mem + rulesfile_size && *p != '\n') p++;
+      }
       if (fldcnt == 3) {
 	int rslt;
 	if (0) {
@@ -222,9 +227,15 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
 	}
       } else {
 	// There are the wrong number of fields in this rule - Ignore the record.
-	if (explain) printf(" .. wrong number of fields %d.\n", fldcnt);
+	// (Don't complain about comment lines or blank lines)
+	if (explain && fldcnt > 1) {
+	  printf(" .. wrong number of fields %d in rule %d:\n", fldcnt, lncnt);
+	  show_string_upto_nator(line_start, '\n', 0);
+	  printf("\n");
+	}
       }
       fldcnt = 1;
+      line_start = p + 1;
     }
     p++;
   } // end of while
@@ -274,8 +285,12 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
       } else if (fldcnt == 3) {
 	rhslen = p - rhs_start;
       }
-    } else if (*p == '\n') {  // This works for both Unix and Windows line termination.
-      if (fldcnt == 3) {
+    } else if (*p == '#' || *p == '\n') {    // \n works for both Unix and Windows line termination.
+      if (*p == '#') {
+	// The rest of this line is a comment.  Skip forward to '\n' or EOF and process as end of line
+	while (p < rulesfile_in_mem + rulesfile_size && *p != '\n') p++;
+      }
+       if (fldcnt == 3) {
 	// We're at the end of line.
 	int rslt;
 	// Must copy to writeable memory before calling v_and_n
