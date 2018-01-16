@@ -15,11 +15,11 @@ The multi-query capability is implemented by
 src/qbashq-lib/QBASHQ_lib.c:handle_multi_query().  Here is the comment
 preceding that function.
 
-// For lyrics and other query-classification projects, it is proposed
-// that we modify the QBASHER query processor DLL to support
-// multi-queries.  A multi-query comprises a small set of queries,
+// For lyrics and other query-classification projects, we modified
+// the QBASHER query processor DLL to support multi-queries.  
+// A multi-query is expected to comprise a small set of queries,
 // each with different lexical forms and/or different processing
-// options, but all with the same intent.  In a typical scenario there
+// options, but all with the same intent.  In an envisaged scenario there
 // might be a raw, user-typed query, a spelling-corrected version, and
 // two query rewrites.  In some scenarios all of the queries may be
 // run.  In others, the first query is always run but whether
