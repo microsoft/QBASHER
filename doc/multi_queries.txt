@@ -1,0 +1,88 @@
+QBASHER Multi-Query capability
+==============================
+
+16 Jan 2018.  QBASHER version 1.5.127 and beyond.
+
+QBASHER has the ability to accept multiple query variants in a single
+query request.  The multi-query mechanism allows for different
+variants to be run with different per-query options, and for document
+scores to be weighted differently.  It also allows the submitter to
+specify whether the variants after the first are always run or only
+run as fallbacks.  If multiple query variants are run, the result list
+is a union of the result lists for each variant.
+
+The multi-query capability is implemented by
+src/qbashq-lib/QBASHQ_lib.c:handle_multi_query().  Here is the comment
+preceding that function.
+
+// For lyrics and other query-classification projects, it is proposed
+// that we modify the QBASHER query processor DLL to support
+// multi-queries.  A multi-query comprises a small set of queries,
+// each with different lexical forms and/or different processing
+// options, but all with the same intent.  In a typical scenario there
+// might be a raw, user-typed query, a spelling-corrected version, and
+// two query rewrites.  In some scenarios all of the queries may be
+// run.  In others, the first query is always run but whether
+// subsequent queries are run depends upon the outcome of post-query
+// tests.  Associated with each query is a weight used to scale scores
+// obtained when running it.
+//
+// If a deterministic timeout is in force, it will be applied across
+// the whole MQS, not separately for each component query.
+//
+// A query string (QS) within a multi-query string (MQS) consists of
+// between 1 and 4 tab-separated fields.  In approximate BNF:
+//
+// <MQS> ::= <QS>…NUL
+
+// <QS> ::=
+// <query>[\t<options>[\t<weight>[\t<post-query-test>]]]<qTermChar>
+//
+// <qTermChar> ::= \n|RS
+//
+// <query> is a UTF-8 string containing no ASCII controls <options>
+//   and <weight> may be empty strings.
+// <options> are QBASHER per-query options -- Note that these will
+//   be ignored unless allow_per_query_options=TRUE.
+// <weight> is a decimal fraction between 0 and 1 which is used
+//   to scale scores of documents retrieved by this variant.
+// <post-query-test> can be either a test of how many results (N)
+//   have been found so far, e.g. "N<5" or to the highest score (H)
+//   so far achieved, e.g. "H<0.95".  The only relational operator to
+//   be implemented in the initial version is < (less than) and the
+//   only quantities able to be tested are H and N.  If there is no
+//   post-query-test, the next variant will always be run.
+// <qTermChar> - RS is the ASCII record separator character ctrl-^
+//   (0x1E).  Use of the alternative \n (ASCII linefeed) 
+//   improves readability, but can't be used when runnng batches
+//   of queries through QBASHQ.
+//  
+//
+// Some MQS examples:
+//
+// Simplest possible:
+//   Lucie in the sky with dimends\n
+//   NUL # a single query with no weight (1.0 assumed), no query-specific
+//   options and no post-query-test.  (The interpreter will tolerate
+//   the lack of a final \n).
+//
+// All variants are run:
+//   Lucie in the sky with dimends\n
+//   Lucy in the sky with diamonds\n
+//   NUL # Both query variants are always run, producing a single result list.
+//
+//
+// Query fallback. Running of subsequent queries depends upon
+// post-query conditions:
+//   Lucie in the sky with dimends\t\t1.0\N<1\n
+//   Lucie in the sky with dimends\t-relaxation_level=1\t0.9\tH<0.85\n
+//   Lucy in the sky with diamonds\t\t0.8\n
+//   NUL # This MQS represents a set of three query variants.  The first one
+//   is the raw user query, run with normal options and with full weight.  If
+//   it fails to find any results (N<1), execution will continue with the
+//   second variant, which is the same query run with relaxation.  If any
+//   results are found in this process, their scores are multiplied by
+//   0.9.  If this query fails to find a result with a score of at least
+//   0.85, then execution proceeds to the final variant, run with a
+//   scoring weight of 0.8
+

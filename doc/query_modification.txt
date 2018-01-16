@@ -1,29 +1,117 @@
-Using the QBASHQ substitution rules mechanism
-=============================================
+Using the QBASHER Query Modification mechanisms
+===============================================
 
-18 Dec 2017.
+15 Jan 2018.  QBASHER version 1.5.127 and beyond.
 
+This document replaces Substitution_rules.txt, after QBASHER
+substitution rules were overhauled in early January 2018.  It also
+describes the new segment_rules mechanism, and the other query
+normalisation mechanisms which have been part of QBASHER for at least
+18 months.
 
-Substitution rules work as follows: 
+A. Introduction
+---------------
+QBASHER needs query modification mechanisms for three main reasons:  (A)
+to protect itself against potentially damaging input sequences, (B) to increase
+coverage by avoiding missing documents due to small lexicographic
+issues, and (C) to recognize and remove query intent words from
+queries when operating as a classifier -- e.g. removing "lyrics for"
+from "lyrics for lucy in the sky with diamonds" since those words
+won't be matched, but their presence can be used to bias the
+classification decision.
+
+QBASHER assumes that all input queries are coded in UTF-8.  However,
+in practice, some non-valid UTF-8 bytes turn out to be Windows-1252
+punctuation characters such as smart quotes and em-dashes.  These are
+normally converted into the nearest ASCII equivalent.  E.g. ASCII
+double quote for smart double quotes, ASCII hyphen for any form of dash.
+
+B. The sequence of query modifications
 -----------------------------------
+(Implemented in src/qbashq-lib/QBASHQ_lib.c:process_query_text())
+
+1. A lower-cased copy is made of the query using
+   src/shared/unicode.c:utf8_lowering_ncopy(). Windows-1252 punctuation
+   characters above 0x80 are converted to spaces.
+2. If the conflate_accents option is set,
+   src/shared/unicode.c:utf8_remove_accents() is called to replace
+   accented letters with their unaccented forms.
+3. If the street_address_processing option is greater than zero, then
+   parts of a street address which are not indexed are removed. For
+   example, "unit 10", or "suite 4 or the 3 in 3/461".  Then the street
+   number is separately recorded for validation and removed from the
+   query. Thus "3/461 ocean boulevard" becomes "ocean boulevard" and 461
+   is recorded as the street number.  This processing is performed by
+   src/utils/street_addresses.c:process_street_address().
+4. If we are operating in the special auto_suggest mode
+   (auto_line_prefix=TRUE) designed to
+   cover the case where no full words have yet been typed, then the query
+   will  be prefixed by a right angle bracket, using
+   src/qbashq-lib/QBASHQ_lib.c:perhaps_prefix_line_with_rab().  In this
+   mode, the query "dichl" would be replaced with
+   ">dichlo".
+5. If we are operating in the auto suggest mode where the last "word"
+   in the query is interpreted as a prefix unless it is followed by a
+   space or other non-indexable character  (auto_partials=TRUE) then
+   the last "word" is prefixed with a forward slash using
+   src/qbashq-lib/QBASHQ_lib.c:prefix_last_word_with_slash()
+6. If we are operating in classifier mode (classifier_mode >0) and
+   a segment_rules file has been loaded, then query modifications
+   appropriate to a query segment (i.e. vertical such as lyrics, or
+   academic papers) and to the current language will be applied using
+   src/utils/substitutions.c:apply_substitutions_rules_to_string(),
+   and a flag will be set if any substitutions actually
+   occurred. Further details of the segment rules mechanism are given
+   in Section E.
+7. If we are operating in classifier mode (classifier_mode >0), and
+   a substitution_rules file has been loaded, and the
+   use_substitutions option is TRUE, then generic query modifications
+   appropriate to the current language will be applied using
+   src/utils/substitutions.c:apply_substitutions_rules_to_string().
+   Further details of the segment rules mechanism are given
+   in Section D.
+8. The src/qbashq-lib/normalize_delimiters() function is then called
+   to clean up the query string by replacing non-indexable characters
+   with spaces, removing superfluous spaces, and ensuring that
+   disjunction and phrase operators are balanced and properly
+   nested. This process is done after all the other substitutions so
+   that what is passed to the query is not at all likely to cause
+   buffer overflows etc.  Further details of normalization are given
+   in Section C.
+
+
+C. Normalization works as follows:
+----------------------------------
+
+
+
+D. Substitution rules work as follows: 
+--------------------------------------
 1. The substitution rules file contains one tab separated rule per
-   line.  <LHS> TAB <RHS>
+   line.  <LHS> TAB <RHS> TAB <language>
 2. LHS can be any perl5-compatible regular expression including
-   capturing expressions.
+   capturing expressions.  The text matching a capturing expression
+   can be refrenced using "\<n>" where n is the number of the
+   expression.  E.g. "(AxxxB)\1\1" should match the string "AxxxB"
+   concatenated with itself twice.
 3. RHS is the replacement string which can include variables such
-   as $2 which means “the text matched by the second capturing
-   expression”.
+   as $2 which means "the text matched by the second capturing
+   expression".  E.g if the RHS were "$1" in the preceding example, an
+   input text of "axxxbaxxxbaxxxb" would be replaced with "AxxxB".
 4. Regular expression matching uses the third-party PCRE2 library
    and specifies PCRE2_UTF and PCRE2_CASELESS options.  I.e.
    matching is case-insensitive and expects patterns and strings
    in UTF-8
-5. Rules are applied in the order in which they occur in the
+5. Only rules whose language matches the current QBASHER language will
+   be considered for application.  Per-query options allow the
+   language to be specified with each individual query.
+6. Rules are applied in the order in which they occur in the
    rules file.
-6. Only one pass is made through the rules.
-7. A rule may cause multiple substitutions.  E.g.
+7. Only one pass is made through the rules.
+8. A rule may cause multiple substitutions.  E.g.
    “singing TAB singin” will replace every occurrence of ‘singing’
    in the query.
-8. Substitution rules are also applied to candidate documents, UNLESS
+9. Substitution rules are also applied to candidate documents, UNLESS
    the RHS contain QBASHQ query operators (double quotes and square
    brackets) and UNLESS the candidate document length is less than
    256 bytes.  Note that the system allows for growth beyond 256 bytes
@@ -33,43 +121,25 @@ Substitution rules work as follows:
    lead to changes in this mechanism. ***
 
 
-Substitution is applied after:
-------------------------------
-1.	Lower casing of the query.
-2.	Accent removal (if accent conflation is turned on)
-3.	Street address processing – Removal of things like ‘Unit 10’
-        or ‘Suite 4’ plus removal and recording of house
-	numbers. 
+E. Segment rules work as follows: 
+---------------------------------
+The segment rules file has the same format and works in the same way as
+the substitution rules file.  Indeed, the same code is used in both
+cases. The differences between the two mechanisms is summarised as
+follows:
 
+	* Segment rules are applied only in classifier modes.
+	* If a segment rule fires, then QBASHQ can bias the
+	  classification decision toward the positive.
+        * Segment rules are specific to a segment, whereas
+	  substitution rules are likely to be more generic, dealing
+	  e.g. with normalization of possessives, plurals and present
+	  participles.
+	
+ 
 
-Substitution is applied before:
--------------------------------
-1.	Normalization of delimiters.  (Removing punctuation, ensuring
-	correct balancing of phrases and disjunctions which may have
-	been introduced by substitutions.)
-2.	Removal of segment-intent words, e.g lyrics segment words such
-	as “words of”, “lyrics for”.
-3.	Query shortening, if turned on.
-
-
-Multiple substitution rules files:
-----------------------------------
-Substitution rules are only activated when the -use_substitions
-option is set to TRUE, or ON, and the appropriate substitution rules
-file exists and is readable.  When QBASHQ is used from the command
-line the substition rules file is expected to be either a file name
-specified explicitly as the value of -file_substitution_rules=, OR
-a file in the index_dir called QBASH.substitution_rules_XX, where XX
-is a two letter code supplied as the value of the -language= option.
-
-The intention of this mechanism is to allow different sets of
-substitution rules for different languages, e.g. EN, FR, DE etc.
-There is nothing to stop you using any two-letter code, such as
-LY (for lyrics).
-
-
-Additional notes:
------------------
-Latency will deteriorate if there are too many rules in the file.  It
+F: Additional notes:
+--------------------
+Latency will deteriorate if there are too many rules for a language.  It
 seems that 50 or so rules is OK but that depends upon the rules and on
 the length of the queries.
