@@ -1,7 +1,7 @@
 QBASHER Multi-Query capability
 ==============================
 
-16 Jan 2018.  QBASHER version 1.5.127 and beyond.
+17 Jan 2018.  QBASHER version 1.5.127 and beyond.
 
 QBASHER has the ability to accept multiple query variants in a single
 query request.  The multi-query mechanism allows for different
@@ -11,6 +11,21 @@ specify whether the variants after the first are always run or only
 run as fallbacks.  If multiple query variants are run, the result list
 is a union of the result lists for each variant.
 
+A. Separating query variants
+----------------------------
+On input, query variants are separated using the ASCII RS (record
+separator) character, i.e. a byte with the hex value 0x1E, equivalent
+to ctrl-^.   Using the vi editor you can produce that using the
+sequence ctrl-K RS, or the sequence ctrl-V ctrl-^.  In cygwin or a
+bash shell you can confirm that you have correctly entered the
+character using the command 'od -a <filename>'.
+
+When looking at QBASHQ.exe output for a multi-query, the query is
+shown with the RS replaced by '#'.
+
+
+B. Implementation details
+-------------------------
 The multi-query capability is implemented by
 src/qbashq-lib/QBASHQ_lib.c:handle_multi_query().  Here is the comment
 preceding that function.

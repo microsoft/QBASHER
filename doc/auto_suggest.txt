@@ -1,0 +1,92 @@
+QBASHER Query Auto-Suggest capabilities
+=======================================
+
+17 Jan 2018.  QBASHER version 1.5.128 and beyond.
+
+A. Original QBASHER auto-suggest mechanism
+------------------------------------------
+The original auto-suggest mechanism was intended to complement the
+use of a trie, in scenarios where prefix matching delivered too few
+(especially none) candidates due to word-order differences.
+I.e. call the trie, then call QBASHER if more candidates are needed.
+
+This mechanism assumed that the user had already typed at least one
+full word and the prefix of another.  The forward slash operator
+signals that the following query 'word' is to be interpreted as a word
+prefix.  QBASHER allows a query to contain multiple word prefix terms,
+though in practice only the last word in the query would be treated as
+a word prefix.  There is also a QBASHER option -auto_partials option
+to automatically apply a slash to the last 'word' in a query unless it
+is followed by a space or other non-indexable character.
+
+If the partial query were {login to /f} (curly braces delimiting the
+query) then QBASHER would find all the records in the index which
+match 'login' AND 'to' and filter them so that only those records
+which also include a word starting with 'f' (e.g. "login to facebook")
+would be considered for inclusion in the results. Filtering has two
+stages.  The first uses a coarse Bloom filter to reject candidates
+with no chance of success.  Candidates which match the Bloom filter
+are checked against the actual record text to ensure a proper match.
+
+Continuing with the example, "login to google" would be an initial
+candidate but it might be eliminated by the Bloom filter. Another
+record "login to skype" might pass the Bloom filter (due to multiple
+first letters mapping to the same bit) but fail the final
+test because it contains no word starting with an 'f'.
+
+When multiple records make it into the result set, e.g. "login to
+facebook" and "finally managed to login to my computer", they are ranked
+using a linear combination of features such as static score, phrase
+feature and excess length score.  The weights applied to the feature
+scores are set by the alpha, beta, ..., theta options.
+
+
+B. Extending to cover the case where there are no full words
+------------------------------------------------------------
+We're considering the case where the query consists just of a word
+prefix, e.g. {/f}. Given that records are internally sorted by
+descending static score, it might be feasible to avoid finding
+candidates using the inverted file and instead scan linearly from the
+document with the highest static score, using the Bloom filter and
+string matching.  However if the word prefix did not occur at all in
+the index, this approach which would run the risk of very high
+latencies because the whole index would be scanned.  This method could
+be fairly easily implemented but has not been.
+
+Instead, an approach was taken to mimic the operation of the trie.
+Every prefix of every distinct word at the beginning of a line is
+indexed as a special word beginning with a right angle bracket.  For
+the record "facebook login", 'facebook' and 'login' would be indexed
+and so would '>f', '>fa', '>fac', '>face' etc.  An incoming query
+{fa} would be converted by the user interface into {>fa} and matching
+records are "instantly" found.
+
+To activate this line prefix method requires giving a non-zero value
+for the indexer option -max_line_prefix.  That value specifies the
+maximum length of line prefix (in bytes) which will be indexed.  To
+limit the blowout in index size caused by this method, only prefixes
+of the first word in a record are treated this way.  The indexer
+option -max_line_prefix_postings further curbs the growth in index
+size by limiting postings lists for the special words to a specified
+maximum length. This limit is not expected to have any effect on the
+quality of results because it's only used when all we have is a single
+word prefix.  Say we are asked for 8 candidates matching {>fac}.  Then
+the 8 candidates will most likely be the first 8 postings, since the
+ranking can't be affected by anything other than static score and
+record length.
+
+One problem which has been noticed when using this approach is that as
+the user continues typing, there is a sudden discontinuity when a
+space is typed at the end of the first word.   As an illustration,
+consider the case where a user starts typing {giraffe sanctuaries in
+Zimbabwe}.  As she types g, gi, gir, ... giraffe, the partial query
+always matches a prefix of the suggestion string.  However, as soon as
+she types a space, suggestions containing giraffe other than at the
+beginning come into play and there is a very perceptible
+discontinuity.   Work is needed to to improve the model here and to
+make the transition more seamless, while retaining low latency.
+
+
+
+
+
