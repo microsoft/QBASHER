@@ -152,8 +152,9 @@ typedef struct {
   double rr_coeffs[NUM_COEFFS], cf_coeffs[NUM_CF_COEFFS], classifier_threshold;
   int relaxation_level, max_to_show, max_candidates_to_consider, max_length_diff, 
     timeout_kops, timeout_msec, displaycol, extracol, query_streams, duplicate_handling,
-    classifier_mode, classifier_min_words, classifier_max_words, x_max_span_length,
-    query_shortening_threshold, street_address_processing, street_specs_col, debug;
+    classifier_mode, classifier_min_words, classifier_max_words, classifier_longest_wdlen_min,
+    x_max_span_length, query_shortening_threshold, street_address_processing, street_specs_col,
+    debug;
   double segment_intent_multiplier;
   double classifier_stop_thresh1, classifier_stop_thresh2;
   double location_lat, location_long, geo_filter_radius;

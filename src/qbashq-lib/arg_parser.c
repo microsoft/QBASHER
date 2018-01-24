@@ -45,7 +45,7 @@
 //   6. Later in the same function assign the new value to a good default, or remove an obsolete
 //	    assignment.
 
-#define NUMBER_OF_ARGS 63
+#define NUMBER_OF_ARGS 64
 
 arg_t args[] = {
   // ------------- If you edit these initialisations, be sure to follow the INSTRUCTIONS above --------------
@@ -89,32 +89,32 @@ arg_t args[] = {
   /* 35 */{ "classifier_threshold", AFLOAT, FALSE, 0, 1, "If classifier_mode > 0 a Yes decision will be made if the score exceeds this value." },
   /* 36 */{ "classifier_min_words", AINT, FALSE, 0, 100, "If classifier_mode > 0 then a No decision will be made for any query with fewer than this number of words." },
   /* 37 */{ "classifier_max_words", AINT, FALSE, 1, 255, "If classifier_mode > 0 then a No decision will be made for any query with more than this number of words." },
-  /* 38 */{ "segment_intent_multiplier", AFLOAT, FALSE, 0, 1, "The classifier_threshold will be multiplied by this if segment intent words are detected." },
-  /* 39 */{ "classifier_stop_thresh1", AFLOAT, FALSE, 0, 1, "Terminate early if the highest-ranked candidate exceeds this value. (classifier_mode > 0)." },
-  /* 40 */{ "classifier_stop_thresh2", AFLOAT, FALSE, 0, 1, "Terminate early if the lowest-ranked of max_to_show candidates exceeds this value. (classifier_mode > 0)." },
-  /* 41 */{ "display_parsed_query", ABOOL, TRUE, 0, 0, "If TRUE, QBASHQ will display the parsed (and possibly re-written query, according to other parameters) query." },
-  /* 42 */{ "debug", AINT, FALSE, 0, 10, "Activate debugging output.  0 - none, 1 - low, 4 - highest; 3 - runs tests; 10 - no debugging but unbuffer stdout" },
-  /* 43 */ { "x_show_qtimes", ABOOL, TRUE, 0, 10, "Set query_streams to one and print a QTIMES: line for each query processed, giving elapsed msec.  (experimental)" },
-  /* 44 */{ "object_store_files", ASTRING, TRUE, 0, 0, "A comma separated list of four index files + config." },
-  /* 45 */{ "language", ASTRING, FALSE, 0, 0, "Any language specific processing will be done in this language, if supported.  Two-char language code. E.g. EN, de, FR, zh" },
-  /* 46 */{ "use_substitutions", ABOOL, FALSE, 0, 0, "If TRUE, and there is a QBASH.substitution_rules file, substitutions for the current language will be applied to queries." },
-  /* 47 */{ "include_result_details", ABOOL, FALSE, 0, 0, "If TRUE, each search result will include 3 extra tab separated fields with additional information. (classifier modes only." },
-  /* 48 */{ "extra_col", AINT, FALSE, 0, 10, "An extra TSV column to include in classifier-mode results display.  If extra_col=0 the output column will be present but empty." },
-  /* 49 */{ "include_extra_features", ABOOL, FALSE, 0, 0, "If TRUE, each search result will include 6 extra tab separated fields with classifier feature values. (classifier modes only" },
-  /* 50 */{ "x_batch_testing", ABOOL, FALSE, 0, 0, "If TRUE, results lines will be presented in a special format including the query." },
-  /* 51 */{ "allow_per_query_options", ABOOL, FALSE, 0, 0, "If TRUE, overriding options can be included in a query after a TAB.  If FALSE, TABs are stripped." },
-  /* 52 */{ "generate_JO_path", ABOOL, FALSE, 0, 0, "Classifier_mode only. When we are very confident, we may return a query with intent words added." },
-  /* 53 */{ "x_conflate_accents", ABOOL, FALSE, 0, 0, "Query and candidate documents will have all accents removed (internally). Experimental at this stage." },
-  /* 54 */{ "chatty", ABOOL, TRUE, 0, 0, "When run in batch mode, default is to print a lot of status information.  if FALSE, most of this will be avoided." },
-  /* 55 */{ "lat", AFLOAT, FALSE, -90, 90, "Latitude of the location associated with the searcher." },
-  /* 56 */{ "long", AFLOAT, FALSE,-180, 180, "Longitude of the location associated with the searcher" },
-  /* 57 */{ "x_max_span_length", AINT, FALSE, 0, 10000, "When checking for partial words, impose a limit on the no. of intervening words in the matched part of the record" },
-  /* 58 */{ "geo_filter_radius", AFLOAT, FALSE, 0, 20038, "Results further than this distance from (lat,long) in km will be filtered out.  No filtering unless value > 0.0 and lat/longs are known for both query and document." },
-  /* 59 */{ "street_address_processing", AINT, FALSE, 0, 10000, "if > 0, delete suite part and street number from query. If > 1, reject candidates for which this street number is not valid." },
-  /* 60 */{ "street_specs_col", AINT, FALSE, 0, 10000, "The column in the .forward file containing a list specifying valid street numbers for this doc (assumed to be a street)." },
-
-  /* 61 */{ "query_shortening_threshold", AINT, FALSE, 0, 100, "Queries with more terms than the given value will be shortened to this length. 0 => no shortening" },
-  /* 62 */{ "", AEOL, FALSE, 0, 0, "" }
+  /* 38 */{ "classifier_longest_wdlen_min", AINT, FALSE, 1, 255, "If classifier_mode > 0 then a No decision will be made for any query whose longest word is shorter than this (in bytes)." },
+  /* 39 */{ "segment_intent_multiplier", AFLOAT, FALSE, 0, 1, "The classifier_threshold will be multiplied by this if segment intent words are detected." },
+  /* 40 */{ "classifier_stop_thresh1", AFLOAT, FALSE, 0, 1, "Terminate early if the highest-ranked candidate exceeds this value. (classifier_mode > 0)." },
+  /* 41 */{ "classifier_stop_thresh2", AFLOAT, FALSE, 0, 1, "Terminate early if the lowest-ranked of max_to_show candidates exceeds this value. (classifier_mode > 0)." },
+  /* 42 */{ "display_parsed_query", ABOOL, TRUE, 0, 0, "If TRUE, QBASHQ will display the parsed (and possibly re-written query, according to other parameters) query." },
+  /* 43 */{ "debug", AINT, FALSE, 0, 10, "Activate debugging output.  0 - none, 1 - low, 4 - highest; 3 - runs tests; 10 - no debugging but unbuffer stdout" },
+  /* 44 */ { "x_show_qtimes", ABOOL, TRUE, 0, 10, "Set query_streams to one and print a QTIMES: line for each query processed, giving elapsed msec.  (experimental)" },
+  /* 45 */{ "object_store_files", ASTRING, TRUE, 0, 0, "A comma separated list of four index files + config." },
+  /* 46 */{ "language", ASTRING, FALSE, 0, 0, "Any language specific processing will be done in this language, if supported.  Two-char language code. E.g. EN, de, FR, zh" },
+  /* 47 */{ "use_substitutions", ABOOL, FALSE, 0, 0, "If TRUE, and there is a QBASH.substitution_rules file, substitutions for the current language will be applied to queries." },
+  /* 48 */{ "include_result_details", ABOOL, FALSE, 0, 0, "If TRUE, each search result will include 3 extra tab separated fields with additional information. (classifier modes only." },
+  /* 49 */{ "extra_col", AINT, FALSE, 0, 10, "An extra TSV column to include in classifier-mode results display.  If extra_col=0 the output column will be present but empty." },
+  /* 50 */{ "include_extra_features", ABOOL, FALSE, 0, 0, "If TRUE, each search result will include 6 extra tab separated fields with classifier feature values. (classifier modes only" },
+  /* 51 */{ "x_batch_testing", ABOOL, FALSE, 0, 0, "If TRUE, results lines will be presented in a special format including the query." },
+  /* 52 */{ "allow_per_query_options", ABOOL, FALSE, 0, 0, "If TRUE, overriding options can be included in a query after a TAB.  If FALSE, TABs are stripped." },
+  /* 53 */{ "generate_JO_path", ABOOL, FALSE, 0, 0, "Classifier_mode only. When we are very confident, we may return a query with intent words added." },
+  /* 54 */{ "x_conflate_accents", ABOOL, FALSE, 0, 0, "Query and candidate documents will have all accents removed (internally). Experimental at this stage." },
+  /* 55 */{ "chatty", ABOOL, TRUE, 0, 0, "When run in batch mode, default is to print a lot of status information.  if FALSE, most of this will be avoided." },
+  /* 56 */{ "lat", AFLOAT, FALSE, -90, 90, "Latitude of the location associated with the searcher." },
+  /* 57 */{ "long", AFLOAT, FALSE,-180, 180, "Longitude of the location associated with the searcher" },
+  /* 58 */{ "x_max_span_length", AINT, FALSE, 0, 10000, "When checking for partial words, impose a limit on the no. of intervening words in the matched part of the record" },
+  /* 59 */{ "geo_filter_radius", AFLOAT, FALSE, 0, 20038, "Results further than this distance from (lat,long) in km will be filtered out.  No filtering unless value > 0.0 and lat/longs are known for both query and document." },
+  /* 60 */{ "street_address_processing", AINT, FALSE, 0, 10000, "if > 0, delete suite part and street number from query. If > 1, reject candidates for which this street number is not valid." },
+  /* 61 */{ "street_specs_col", AINT, FALSE, 0, 10000, "The column in the .forward file containing a list specifying valid street numbers for this doc (assumed to be a street)." },
+  /* 62 */{ "query_shortening_threshold", AINT, FALSE, 0, 100, "Queries with more terms than the given value will be shortened to this length. 0 => no shortening" },
+  /* 63 */{ "", AEOL, FALSE, 0, 0, "" }
 };
 
 
@@ -163,30 +163,31 @@ int initialize_qoenv_mappings(query_processing_environment_t *qoenv) {
   vptra[35] = (void *)&(qoenv->classifier_threshold);
   vptra[36] = (void *)&(qoenv->classifier_min_words);
   vptra[37] = (void *)&(qoenv->classifier_max_words);
-  vptra[38] = (void *)&(qoenv->segment_intent_multiplier);
-  vptra[39] = (void *)&(qoenv->classifier_stop_thresh1);
-  vptra[40] = (void *)&(qoenv->classifier_stop_thresh2);
-  vptra[41] = (void *)&(qoenv->display_parsed_query);
-  vptra[42] = (void *)&(qoenv->debug);
-  vptra[43] = (void *)&(qoenv->x_show_qtimes);
-  vptra[44] = (void *)&(qoenv->object_store_files);
-  vptra[45] = (void *)&(qoenv->language);
-  vptra[46] = (void *)&(qoenv->use_substitutions);
-  vptra[47] = (void *)&(qoenv->include_result_details);
-  vptra[48] = (void *)&(qoenv->extracol);
-  vptra[49] = (void *)&(qoenv->include_extra_features);
-  vptra[50] = (void *)&(qoenv->x_batch_testing);
-  vptra[51] = (void *)&(qoenv->allow_per_query_options);
-  vptra[52] = (void *)&(qoenv->generate_JO_path);
-  vptra[53] = (void *)&(qoenv->conflate_accents);
-  vptra[54] = (void *)&(qoenv->chatty);
-  vptra[55] = (void *)&(qoenv->location_lat);
-  vptra[56] = (void *)&(qoenv->location_long);
-  vptra[57] = (void *)&(qoenv->x_max_span_length);
-  vptra[58] = (void *)&(qoenv->geo_filter_radius);
-  vptra[59] = (void *)&(qoenv->street_address_processing);
-  vptra[60] = (void *)&(qoenv->street_specs_col);
-  vptra[61] = (void *)&(qoenv->query_shortening_threshold);
+  vptra[38] = (void *)&(qoenv->classifier_longest_wdlen_min);
+  vptra[39] = (void *)&(qoenv->segment_intent_multiplier);
+  vptra[40] = (void *)&(qoenv->classifier_stop_thresh1);
+  vptra[41] = (void *)&(qoenv->classifier_stop_thresh2);
+  vptra[42] = (void *)&(qoenv->display_parsed_query);
+  vptra[43] = (void *)&(qoenv->debug);
+  vptra[44] = (void *)&(qoenv->x_show_qtimes);
+  vptra[45] = (void *)&(qoenv->object_store_files);
+  vptra[46] = (void *)&(qoenv->language);
+  vptra[47] = (void *)&(qoenv->use_substitutions);
+  vptra[48] = (void *)&(qoenv->include_result_details);
+  vptra[49] = (void *)&(qoenv->extracol);
+  vptra[50] = (void *)&(qoenv->include_extra_features);
+  vptra[51] = (void *)&(qoenv->x_batch_testing);
+  vptra[52] = (void *)&(qoenv->allow_per_query_options);
+  vptra[53] = (void *)&(qoenv->generate_JO_path);
+  vptra[54] = (void *)&(qoenv->conflate_accents);
+  vptra[55] = (void *)&(qoenv->chatty);
+  vptra[56] = (void *)&(qoenv->location_lat);
+  vptra[57] = (void *)&(qoenv->location_long);
+  vptra[58] = (void *)&(qoenv->x_max_span_length);
+  vptra[59] = (void *)&(qoenv->geo_filter_radius);
+  vptra[60] = (void *)&(qoenv->street_address_processing);
+  vptra[61] = (void *)&(qoenv->street_specs_col);
+  vptra[62] = (void *)&(qoenv->query_shortening_threshold);
   return 0;
 } 
 
@@ -231,6 +232,7 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->classifier_threshold = 0.75;
   qoenv->classifier_min_words = 0;
   qoenv->classifier_max_words = 255;
+  qoenv->classifier_longest_wdlen_min = 2;
   qoenv->segment_intent_multiplier = 1.0;
   qoenv->classifier_stop_thresh1 = 1.0;
   qoenv->classifier_stop_thresh2 = 1.0;

@@ -248,7 +248,7 @@ if ($reindex) {
 
 $cmd = "$binDir/QBASHQ.exe index_dir=$idxdir/wikipedia_titles -pq='gonebut notforgotten'";
 $eeq_rslts = `$cmd`;
-die "Easter egg query failed: $eeq_rslts\n" if ($? || !($eeq_rslts =~ /Easter-Egg:/));
+die "Easter egg query failed: $eeq_rslts\n$cmd\n" if ($? || !($eeq_rslts =~ /Easter-Egg:/));
 
 $eeq_rslts =~ s/\t.*/ in wikipedia_titles corpus/;
 

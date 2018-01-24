@@ -2038,3 +2038,11 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        unlikely to have lyrics intent.  However {lyrics to the song
        Help!} also reduces to one word after application of segment
        rules but we can be confident that there is a lyrics intent.
+       
+*** v1.5.130-OS developer1 24 Jan 2017 ***
+    1. Some false positives arise in lyrics classification for queries
+       comprising only single letter words.  E.g. {y o u t u b e . c o
+       m}.  Introduced a classifier_longest_wdlen_min, default
+       value 2, meaning that the a query whose longest word length is
+       less than 2 bytes results in instant rejection.
+    

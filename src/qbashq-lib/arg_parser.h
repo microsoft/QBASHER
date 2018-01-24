@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 
-#define MAX_ARGLEN 25
+#define MAX_ARGLEN 30
 #define MAX_VALSTRING 4096
 #define MAX_EXPLANATIONLEN 199
 

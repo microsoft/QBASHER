@@ -2000,14 +2000,17 @@ static int strip_qbash_operators(u_char *str) {
 
 
 
-static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str, int *query_words) {
+static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str,
+								int *query_words,
+								int *max_wd_len_in_bytes) {
   // In-place replacement of all ascii punctuation and control chars with spaces, and removal
   // of excess spaces.  Also impose limits on the total number of bytes and the 
   // total number of words.
   // Return the length of the resulting string
-  u_char *r = str, *w = str, last_written = 0;
-  size_t byte_limit = 240; 
+  u_char *r = str, *w = str, last_written = 0, *word_start = str;
+  size_t byte_limit = 240, wdlen, max_wdlen = 0; 
   int word_count = 0;
+ 
   *query_words = 0;
   if (str == NULL) return 0;
   if (0) printf("Stripping(%s) --> ", str);
@@ -2016,6 +2019,10 @@ static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str, int
     if (ispunct(*r) || *r <= ' ') {
       if (w > str && last_written != ' ') {  // Don't write spaces at start or after a space
 	*w++ = ' ';
+	wdlen = w - word_start;
+	if (0) printf(" --- wdlen %zd\n", wdlen);
+	if (wdlen > max_wdlen) max_wdlen = wdlen;
+	word_start = w + 1;
 	last_written = ' ';
 	if (++word_count >= MAX_WDS_IN_QUERY) break;
       }
@@ -2037,8 +2044,15 @@ static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str, int
     w--;  // Last char might be a space.  Trim it.
     *w = 0;
   }
+  if (w > word_start) {
+    wdlen = w - word_start;
+    if (0) printf(" --- wdlen %zd\n", wdlen);
+    if (wdlen > max_wdlen) max_wdlen = wdlen;
+  }
+
   if (0) printf(" --> (%s)\n", str);
   *query_words = word_count;
+  *max_wd_len_in_bytes = (int)max_wdlen;
   return (w - str);
 }
 
@@ -3547,8 +3561,12 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
   if (local_qenv->classifier_mode) {
     // Introduced on 26 Aug 2016 (in response to further production crashes)
     size_t l;
-    int original_query_words = 0;
-    l = trim_and_strip_all_ascii_punctuation_and_controls(qex->query, &original_query_words);
+    int original_query_words = 0, max_word_length_in_bytes = 0;
+    l = trim_and_strip_all_ascii_punctuation_and_controls(qex->query,
+							  &original_query_words,
+							  &max_word_length_in_bytes);
+    if (0) printf("  --- orig q words %d, max_wdlen_in_bytes %d\n",
+		  original_query_words, max_word_length_in_bytes);
     if (local_qenv->display_parsed_query)
       printf("Query after stripping punctuation and controls is {%s}\n",
 	     qex->query);
@@ -3556,6 +3574,10 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
     if (local_qenv->classifier_min_words > 0
 	&& original_query_words < local_qenv->classifier_min_words) return(0);  //-----------> Query too short
         // It's not an error, we're just saving ourselves a lot of work
+    if (local_qenv->classifier_longest_wdlen_min > 0
+	&& max_word_length_in_bytes < local_qenv->classifier_longest_wdlen_min)
+      return(0);  //-----------> All query words are too short
+        // It's not an error, we're just avoiding embarrassing false positives.
   } 
 
 
