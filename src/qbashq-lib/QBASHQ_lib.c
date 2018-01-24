@@ -2000,7 +2000,7 @@ static int strip_qbash_operators(u_char *str) {
 
 
 
-static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str) {
+static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str, int *query_words) {
   // In-place replacement of all ascii punctuation and control chars with spaces, and removal
   // of excess spaces.  Also impose limits on the total number of bytes and the 
   // total number of words.
@@ -2008,12 +2008,13 @@ static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str) {
   u_char *r = str, *w = str, last_written = 0;
   size_t byte_limit = 240; 
   int word_count = 0;
+  *query_words = 0;
   if (str == NULL) return 0;
   if (0) printf("Stripping(%s) --> ", str);
   while (*r == ' ') r++;  // Skip leading spaces
   while (*r) {
     if (ispunct(*r) || *r <= ' ') {
-      if (last_written != ' ') {
+      if (w > str && last_written != ' ') {  // Don't write spaces at start or after a space
 	*w++ = ' ';
 	last_written = ' ';
 	if (++word_count >= MAX_WDS_IN_QUERY) break;
@@ -2037,6 +2038,7 @@ static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str) {
     *w = 0;
   }
   if (0) printf(" --> (%s)\n", str);
+  *query_words = word_count;
   return (w - str);
 }
 
@@ -3425,6 +3427,8 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
   //  --- this is called once per query variant  -- NO LONGER SUPPORTS SHARDS ----
   //  --- No longer called directly, only through handle_multi_query()
   //
+  // Returns the number of results found, or a negative error code.
+  //
   // The steps in this function:
   //  1. Optional option overriding
   //  2. If applicable, set up for result-count-only mode
@@ -3470,9 +3474,8 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
   }
   
   qex->query = query_string;
-  if (0) printf("h-o-q(%s)\n", query_string);
 
-   if (options_string == NULL || *options_string == 0) {
+  if (options_string == NULL || *options_string == 0) {
     // There are no options specific to this query, and we don't need to fiddle with options during classifying,
     //  -- just use the global QP environment
     local_qenv = qoenv;
@@ -3544,9 +3547,15 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
   if (local_qenv->classifier_mode) {
     // Introduced on 26 Aug 2016 (in response to further production crashes)
     size_t l;
-    l = trim_and_strip_all_ascii_punctuation_and_controls(query_string);
+    int original_query_words = 0;
+    l = trim_and_strip_all_ascii_punctuation_and_controls(qex->query, &original_query_words);
+    if (local_qenv->display_parsed_query)
+      printf("Query after stripping punctuation and controls is {%s}\n",
+	     qex->query);
     if (l <= 0) return(0);  // -----------------------------------------------> Empty Query
-
+    if (local_qenv->classifier_min_words > 0
+	&& original_query_words < local_qenv->classifier_min_words) return(0);  //-----------> Query too short
+        // It's not an error, we're just saving ourselves a lot of work
   } 
 
 
@@ -3579,9 +3588,9 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
   }
   if (local_qenv->classifier_mode > 0) {
     classifier_validate_settings(local_qenv, qex);
-    if (qex->qwd_cnt < local_qenv->classifier_min_words
-	|| qex->qwd_cnt > local_qenv->classifier_max_words) {
-       return 0;   // It's not an error, we're just saving ourselves a lot of work
+    if (qex->qwd_cnt > local_qenv->classifier_max_words) {
+       return 0;   // ------------------------------------------------------> No results
+                   // It's not an error, we're just saving ourselves a lot of work
     }
   }
 

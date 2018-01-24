@@ -2029,4 +2029,12 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     2. Adding the ability to include comments (# introducer) in
        substitution_rules and segment_rules files.  Either a line
        by itself or in the third field after the language code.
-       
+    
+*** v1.5.129-OS developer1 24 Jan 2017 ***
+    1. The -classifier_min_words option can be used to avoid false
+       positives, e.g. {mp3}.  Changed implementation to apply this
+       limit immediately after stripping and stopping.  Motivating
+       examples  {' ' ' ' ' mp3} gets stripped down to one word and is
+       unlikely to have lyrics intent.  However {lyrics to the song
+       Help!} also reduces to one word after application of segment
+       rules but we can be confident that there is a lyrics intent.
