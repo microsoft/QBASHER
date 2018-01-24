@@ -2018,11 +2018,11 @@ static size_t trim_and_strip_all_ascii_punctuation_and_controls(u_char *str,
   while (*r) {
     if (ispunct(*r) || *r <= ' ') {
       if (w > str && last_written != ' ') {  // Don't write spaces at start or after a space
-	*w++ = ' ';
 	wdlen = w - word_start;
 	if (0) printf(" --- wdlen %zd\n", wdlen);
+	*w++ = ' ';
 	if (wdlen > max_wdlen) max_wdlen = wdlen;
-	word_start = w + 1;
+	word_start = w;
 	last_written = ' ';
 	if (++word_count >= MAX_WDS_IN_QUERY) break;
       }
