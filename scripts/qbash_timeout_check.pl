@@ -68,7 +68,7 @@ $err_cnt += extract_timings($qsets[0], "-timeout_msec=1 -timeout_kops=0", 1);
 $err_cnt += extract_timings($qsets[0], "-timeout_msec=10 -timeout_kops=0", 0);
 $err_cnt += extract_timings($qsets[0], "-timeout_msec=100 -timeout_kops=0", 0);
 $err_cnt += extract_timings($qsets[0], "-timeout_msec=1000 -timeout_kops=0", 0);
-$err_cnt += extract_timings($qsets[0], "-timeout_msec=0 -timeout_kops=10", 458);
+$err_cnt += extract_timings($qsets[0], "-timeout_msec=0 -timeout_kops=10", 457);
 $err_cnt += extract_timings($qsets[0], "-timeout_msec=0 -timeout_kops=100", 30);
 $err_cnt += extract_timings($qsets[0], "-timeout_msec=0 -timeout_kops=1000", 0);
 $err_cnt += extract_timings($qsets[0], "-timeout_msec=0 -timeout_kops=10000", 0);

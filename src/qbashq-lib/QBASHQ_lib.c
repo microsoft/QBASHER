@@ -2708,6 +2708,12 @@ static int process_query(query_processing_environment_t *qoenv, book_keeping_for
   // Possibly reduce the number of terms used in candidate generation
 
   create_candidate_generation_query(qoenv, qex);
+  // Now make sure the shortened query is not too short.  Be more lenient if
+  // vertical intent has been signaled
+  if (qoenv->classifier_min_words > 0 && qex->cg_qwd_cnt < qoenv->classifier_min_words) {
+    if (!qex->vertical_intent_signaled) return 0;
+    else if (qex->cg_qwd_cnt < 2) return 0;
+  }
   if (qoenv->display_parsed_query) {
     u_char shortening_code[10] = {0};
     int pos = 0;

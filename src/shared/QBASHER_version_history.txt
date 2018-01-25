@@ -2045,4 +2045,15 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        m}.  Introduced a classifier_longest_wdlen_min, default
        value 2, meaning that the a query whose longest word length is
        less than 2 bytes results in instant rejection.
+
+*** v1.5.131-OS developer1 25 Jan 2018 ***
+    1. Query shortening in classifier mode runs the danger that the
+       removal of out-of-vocabulary words results in a query with very
+       few, sometimes only one word, or even none.  If that word is
+       very common, like 'the' then there will be hundreds of million
+       candidates to futilely examine, leading to huge latency.
+       The change applied here is to return an instant negative
+       decision if the shortened query is less than
+       classifier_min_words (when there were no query intent words) or
+       a slightly shorter limit if intent words were detected.
     
