@@ -222,8 +222,8 @@ namespace QBASHQsharpNative
             Stopwatch stopWatch = new Stopwatch();
  
             string line,
-                ixRoot = @"C:/Users/dahawkin/GIT/Qbasher/QBASHER/indexes/",
-                ixName = @"Top100M", listOfPaths = "";
+                ixRoot = @"../test_data/",
+                ixName = @"wikipedia_titles", listOfPaths = "";
             string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch",
                 //"/QBASH.output" 
             };
@@ -232,9 +232,23 @@ namespace QBASHQsharpNative
             foreach (string arg in args)
             {
                 string[] argval = arg.Split(delims);
-                if (argval[0] == "-index_name") ixName = argval[1];
+                if (argval[0] == "-index_root") ixRoot = argval[1];
+                else if (argval[0] == "-index_name") ixName = argval[1];
                 else if (argval[0] == "-object_store_files") listOfPaths = argval[1];
                 else if (argval[0] == "-query_streams") queryStreams = Int32.Parse(argval[1]);
+                else if (argval[0] == "-help") {
+                    Console.WriteLine("\nQBASHQsharpNative.exe is a simple front end to the QBASHER API, designed to help find API bugs");
+                    Console.WriteLine("prior to loading the DLL into Object Store.  It supports the following options:\n");
+                    Console.WriteLine("  -help                    - show this message.");
+                    Console.WriteLine("  -index_root=<directory>  - A parent directory potentially containing multiple QBASHER indexes.");
+                    Console.WriteLine("  -index-name=<name>       - The name of a sub-directory within index_root, containing a single index.");
+                    Console.WriteLine("  -object_store_files=<comma-separated list of files> - Explicit paths to all the index files. (Instead of index_root and index_name.)");
+                    Console.WriteLine("  -query_streams=<integer> - The degree of parallelism used when running queries.\n");
+                    Console.WriteLine("Queries are read one per line, either from a file called QBASH.query_batch in index_root/index_name");
+                    Console.WriteLine("or explicitly listed in -object_store_files.");
+                    Console.WriteLine("\nOutput is in the format expected by the ObjectStore coproc.\n");
+                    Environment.Exit(0);
+                }
             }
              
 
