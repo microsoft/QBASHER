@@ -223,8 +223,8 @@ namespace QBASHQsharpNative
  
             string line,
                 ixDir = @"../test_data/wikipedia_titles", listOfPaths = "", partialQuery = "";
-            string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch",
-                "/QBASH.segment_rules", "/QBASH.substitution_rules",
+            string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch,",
+                "/QBASH.segment_rules,", "/QBASH.substitution_rules",
                 //"/QBASH.output" 
             };
             char[] delims = {'='};
