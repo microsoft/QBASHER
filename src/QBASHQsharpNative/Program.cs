@@ -222,9 +222,9 @@ namespace QBASHQsharpNative
             Stopwatch stopWatch = new Stopwatch();
  
             string line,
-                ixRoot = @"../test_data/",
-                ixName = @"wikipedia_titles", listOfPaths = "";
+                ixDir = @"../test_data/wikipedia_titles", listOfPaths = "", partialQuery = "";
             string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch",
+                "QBASH.segment_rules", "QBASH.substitution_rules",
                 //"/QBASH.output" 
             };
             char[] delims = {'='};
@@ -232,20 +232,20 @@ namespace QBASHQsharpNative
             foreach (string arg in args)
             {
                 string[] argval = arg.Split(delims);
-                if (argval[0] == "-index_root") ixRoot = argval[1];
-                else if (argval[0] == "-index_name") ixName = argval[1];
+                if (argval[0] == "-index_dir") ixDir = argval[1];
                 else if (argval[0] == "-object_store_files") listOfPaths = argval[1];
                 else if (argval[0] == "-query_streams") queryStreams = Int32.Parse(argval[1]);
+                else if (argval[0] == "-pq") partialQuery = argval[1];
                 else if (argval[0] == "-help") {
                     Console.WriteLine("\nQBASHQsharpNative.exe is a simple front end to the QBASHER API, designed to help find API bugs");
                     Console.WriteLine("prior to loading the DLL into Object Store.  It supports the following options:\n");
                     Console.WriteLine("  -help                    - show this message.");
-                    Console.WriteLine("  -index_root=<directory>  - A parent directory potentially containing multiple QBASHER indexes.");
-                    Console.WriteLine("  -index-name=<name>       - The name of a sub-directory within index_root, containing a single index.");
-                    Console.WriteLine("  -object_store_files=<comma-separated list of files> - Explicit paths to all the index files. (Instead of index_root and index_name.)");
-                    Console.WriteLine("  -query_streams=<integer> - The degree of parallelism used when running queries.\n");
-                    Console.WriteLine("Queries are read one per line, either from a file called QBASH.query_batch in index_root/index_name");
-                    Console.WriteLine("or explicitly listed in -object_store_files.");
+                    Console.WriteLine("  -index_dir=<directory>   - A directory potentially containing a single QBASHER index.");
+                    Console.WriteLine("  -object_store_files=<comma-separated list of files> - Explicit paths to all the index files. (Instead of index_dir.)");
+                    Console.WriteLine("  -query_streams=<integer> - The degree of parallelism used when running queries.");
+                    Console.WriteLine("  -pq=<query_string> - A single QBASHER query string.\n");
+                    Console.WriteLine("If no -pq option is given, queries are read one per line, either from stdin or from a file called QBASH.query_batch ");
+                    Console.WriteLine("in index_dir or explicitly listed in -object_store_files.");
                     Console.WriteLine("\nOutput is in the format expected by the ObjectStore coproc.\n");
                     Environment.Exit(0);
                 }
@@ -256,7 +256,7 @@ namespace QBASHQsharpNative
             if (listOfPaths.Equals("")) {
                 foreach (string file in files)
                 {
-                    listOfPaths += (ixRoot + ixName + file);
+                    listOfPaths += (ixDir + file);
                 }
             }
 
@@ -288,12 +288,15 @@ namespace QBASHQsharpNative
             for (q = 0; q < queryStreams; q++) busy[q] = false;
 
 
-            // Now read and process the queries, either from a file, or from the Console
+            // Now read and process the queries, either from a a -pq string, or from a file, or from the Console
 
             stopWatch.Start();
-            if (listOfPaths.Contains(".query_batch"))
+            if (partialQuery != "") {
+                processOneInputLine(partialQuery);
+                queries_processed++;
+            } else if (listOfPaths.Contains(".query_batch"))
             {
-                using (StreamReader reader = File.OpenText(ixRoot + ixName + "/QBASH.query_batch"))  // from a file.........................
+                using (StreamReader reader = File.OpenText(ixDir + "/QBASH.query_batch"))  // from a file.........................
                 {
                      while ((line = reader.ReadLine()) != null)
                     {
