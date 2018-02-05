@@ -7,7 +7,7 @@
 
 #define IF_HEADER_LEN 4096   // Mustn't change this, except in connection with a change in INDEX_FORMAT
 #define INDEX_FORMAT "QBASHER 1.5"  // This will be written into the header area of the .if file.
-#define QBASHER_VERSION ".131-OS"   // This is relative to the INDEX_FORMAT.  Whenever the index format
+#define QBASHER_VERSION ".132-OS"   // This is relative to the INDEX_FORMAT.  Whenever the index format
 				    // changes this should be reset to .0.  Whenever QBASHI or QBASHQ are
 				    // edited it should be incremented.  It's also written into the
 				    // .if header.

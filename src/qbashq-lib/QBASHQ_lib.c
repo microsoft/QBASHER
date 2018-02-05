@@ -4034,7 +4034,7 @@ static int split_filelist_arg(query_processing_environment_t *qoenv, u_char *pFi
       else if (!strcmp((char *)name + (len - 3), ".if")) qoenv->fname_if = name;
       else if (!strcmp((char *)name + (len - 7), ".config")) qoenv->fname_config = name;
       else if (!strcmp((char *)name + (len - 19), ".substitution_rules")) qoenv->fname_substitution_rules = name;
-      else if (!strcmp((char *)name + (len - 19), ".segment_rules")) qoenv->fname_segment_rules = name;
+      else if (!strcmp((char *)name + (len - 14), ".segment_rules")) qoenv->fname_segment_rules = name;
       else if (!strcmp((char *)name + (len - 12), ".query_batch")) qoenv->fname_query_batch = name;
       else if (!strcmp((char *)name + (len - 7), ".output")) qoenv->fname_output = name;
       else {

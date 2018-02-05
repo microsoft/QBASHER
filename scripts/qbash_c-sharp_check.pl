@@ -11,7 +11,6 @@
 # reference ../QBASHER/indexes/Top100M
 
 use Time::HiRes qw (gettimeofday);
-# Assumes run in a directory with the following relative directories:
 
 $long_run = 0;
 if ($long_run) {
@@ -23,6 +22,7 @@ if ($long_run) {
 }
 
 
+# Assumes run in a directory with the following relative directories:
 $tqdir = "../test_queries";
 $ix = "../test_data/wikipedia_titles";
 

@@ -12,4 +12,3 @@ C:\Users\dahawkin\GIT\GitHub\QBASHER\src\QBASHQsharpNative\obj\x64\Release\QBASH
 C:\Users\dahawkin\GIT\GitHub\QBASHER\src\visual_studio\x64\Release\QBASHQsharpNative.exe.config
 C:\Users\dahawkin\GIT\GitHub\QBASHER\src\visual_studio\x64\Release\QBASHQsharpNative.exe
 C:\Users\dahawkin\GIT\GitHub\QBASHER\src\visual_studio\x64\Release\QBASHQsharpNative.pdb
-C:\Users\dahawkin\GIT\GitHub\QBASHER\src\QBASHQsharpNative\obj\x64\Release\QBASHQsharpNative.csprojResolveAssemblyReference.cache

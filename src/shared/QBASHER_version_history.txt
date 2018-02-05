@@ -2057,3 +2057,5 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        classifier_min_words (when there were no query intent words) or
        a slightly shorter limit if intent words were detected.
     
+*** v1.5.132-OS developer1 05 Feb 2018 ***
+    1. Fixing a length error for the segment_rules entry in split_filelist_arg()
