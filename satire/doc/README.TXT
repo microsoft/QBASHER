@@ -1,0 +1,51 @@
+SATIRE (Simulating Andrew Trotman's Information Retrieval Environment)
+is a small, experimental, retrieval system designed to support
+experimentation with impact-ordered indexes, and score-at-a-time
+processing with early termination.  It consists of an indexer i and a
+query processor q.  To reduce implementation effort in the initial
+phase, terms and documents are both referenced by integer numbers.
+
+INDEXER:  Takes a file of quantised T-D scores in tab-separated-value (TSV)
+format and produces a binary index file which has an impact sorted
+posting list for each of the terms.  The expected input format is one
+line per term.  Each line has the following format:
+
+line ::= <term-id> TAB <score-run> ...
+term-id ::= <integer>
+score-run ::= <score> <run-length> <doc-id> ... ['#']
+score ::= <integer>
+run-length ::= <integer>['*']
+doc-id ::= <integer>
+
+For readability, the last doc-id in a a score-run can be immediately
+followed by a '#' and the run-length can be immediately followed by a
+'*'.
+
+
+In the index, each postings list closely matches this format. It
+consists of a series of runs comprising a run header (score,
+run-length) followed by a series of docids.  Required parameters
+include the number of documents, the number of terms, and the number
+of bits required to represent the range of quantised scores.  Options
+allow the postings lists to be sorted by descending score.  (Otherwise
+it is assumed that the postings are sorted in this order.
+
+INDEX FILES:  .cfg -   (txt) records the options used in building the
+                        index.	      
+	      .vocab - (binary) A table of 64-bit offsets to the
+                        start of postings lists in i.pl
+	      .if -    (binary) The postings lists in the format
+                        described above.  Starting on single-byte offsets.
+			 
+
+QUERY PROCESSOR: Takes an index built by the indexer i, and a set of
+queries in the format requested by Bhaskar.  Produces a set of results
+in the format requested by Bhaskar.   Required parameters are the stem
+of the index files, the number k of results required per query, and
+the limit p on the number of postings accessed in processing a query
+(early termination control).
+
+
+
+
+
