@@ -630,7 +630,7 @@ void lp_free(void *memory_to_free, BOOL x_use_large_pages) {
 
 void *cmalloc(size_t s,  u_char *msg, BOOL verbose) {
   // A front end to malloc() which exits on error, zeroes the allocated memory
-  // and reports the numbe of MB allocated.
+  // and optionally reports the number of MB allocated.
   void *vvv;
   double MB;
   vvv = malloc(s);
@@ -644,6 +644,22 @@ void *cmalloc(size_t s,  u_char *msg, BOOL verbose) {
   return vvv;
 }
 
+
+void *emalloc(size_t s, int calling_code, int *error_code) { 
+  // A front end to malloc() which zeroes the allocated memory
+  // and signals failure by returning an error code.  The code
+  // to be returned in case of error, is passed in as the calling
+  // code.
+  void *vvv;
+  vvv = malloc(s);
+  if (vvv == NULL) {
+    *error_code = calling_code;
+    return vvv;
+  }
+  memset(vvv, 0, s);   // Make sure it's all zeroes
+  *error_code = 0;
+  return vvv;
+}
 
 
 #define SAMPLE_SIZE 65536 

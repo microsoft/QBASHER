@@ -515,6 +515,8 @@ int assign_args_from_config_file(query_processing_environment_t *qoenv, u_char *
   HANDLE MH;
   int error_code;
 
+  if (0) printf("Called assign_args_from_config_file()\n");
+
   fileinmem = (u_char *)mmap_all_of(config_filename, &sighs, FALSE, &H, &MH, &error_code);
   if (error_code || fileinmem == NULL || sighs < 1) return error_code;
 

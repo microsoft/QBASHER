@@ -15,7 +15,7 @@
 // input will be automatically prefixed with a '/'.
 
 
-// Currently, we rely on static ordering of docnums in generating the 
+// Currently, we rely on static ordering of docnums in generating the
 // candidate set and return the first k documents which match the
 // full AND of the query term.  Candidates are then ranked
 // by a score computed from a linear combination of features.
@@ -3105,14 +3105,16 @@ static u_char *open_and_check_index_set(query_processing_environment_t *qoenv,
 
   if (qoenv->use_substitutions) {
     strcpy((char *)suffix, ".substitution_rules");
-    load_substitution_rules(fname, &qoenv->substitutions_hash, qoenv->debug);
+    load_substitution_rules(fname, &qoenv->substitutions_hash, qoenv->debug, -220082, error_code);
   }
+  if (*error_code < 0) return NULL;  // -------------------------------->
 
   if (qoenv->classifier_mode != 0) {
     strcpy((char *)suffix, ".segment_rules");
     if (0) printf("Attempting to load segment rules from index_dir\n");
-    load_substitution_rules(fname, &(qoenv->segment_rules_hash), qoenv->debug);
+    load_substitution_rules(fname, &(qoenv->segment_rules_hash), qoenv->debug, -220081, error_code);
   }
+  if (*error_code < 0) return NULL;  // -------------------------------->
 
   version = check_if_header(ixenv, qoenv, &other_token_breakers, index_stem, error_code);
  
@@ -3187,14 +3189,17 @@ static u_char *open_and_check_index_set_aether(query_processing_environment_t *q
   if (*error_code < 0) return NULL;  // -------------------------------->
 
 
-  if (qoenv->use_substitutions && qoenv->fname_substitution_rules != NULL) 
+  if (qoenv->use_substitutions && qoenv->fname_substitution_rules != NULL) {
     load_substitution_rules(qoenv->fname_substitution_rules, 
-			    &(qoenv->substitutions_hash), qoenv->debug);
+			    &(qoenv->substitutions_hash), qoenv->debug, -220082, error_code);
+    if (*error_code) return 0;  // ------------------------------->
+  }
 
   if (qoenv->classifier_mode != 0 && qoenv->fname_segment_rules != NULL) {
     if (0) printf("Attempting to load segment rules from explicit filename\n");
     load_substitution_rules(qoenv->fname_segment_rules,
-			    &(qoenv->segment_rules_hash), qoenv->debug);
+			    &(qoenv->segment_rules_hash), qoenv->debug, -220081, error_code);
+    if (*error_code) return 0;  // ------------------------------->
   }
 
 
@@ -4517,7 +4522,8 @@ QBASHQ_API int NativeExecuteQueryAsync(LPWSTR pQuery, query_processing_environme
   if (error || how_many_results < 0) {
     wchar_t result[MAX_OS_RESULT_LEN];
 
-    swprintf(result, MAX_OS_RESULT_LEN, RESPONSE_LINEFORMAT_SII, RESPONSE_VERSION_STRING, how_many_results, 0);
+    swprintf(result, MAX_OS_RESULT_LEN, RESPONSE_LINEFORMAT_SII, RESPONSE_VERSION_STRING,
+	     how_many_results, 0);
 
     issueResponse(result);
   }

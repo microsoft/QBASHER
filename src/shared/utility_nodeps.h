@@ -130,6 +130,8 @@ void lp_free(void *memory_to_free, BOOL x_use_large_pages);
 
 void *cmalloc(size_t s, u_char *msg, BOOL verbose);
 
+void *emalloc(size_t s, int calling_code, int *error_code);
+
 void error_exit(char *msg);
 
 void putchars(u_char *str, size_t n);

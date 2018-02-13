@@ -77,7 +77,7 @@ git:
 	git add `find . -iname \*.sln`
 	git add `find . -iname \*.vcxproj`
 	git add `find .. -iname \*.pl`
-	git add `find .. -iname \*.txt`
+	git add `find ..  -maxdepth 3 -iname \*.txt`  # Avoid adding VS filelist
 	git add `find .. -iname \*README\*`
 	git add `find .. -iname \*LICENSE\*`
 	git add `find .. -iname \*VERSION\*`

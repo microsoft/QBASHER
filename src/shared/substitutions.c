@@ -122,19 +122,23 @@ void unload_substitution_rules(dahash_table_t **substitutions_hash, int debug) {
 }
 
 
-static void create_arrays_for_rule_set(rule_set_t *rs, int num_rules) {
+static void create_arrays_for_rule_set(rule_set_t *rs, int num_rules,
+				       int calling_code, int *error_code) {
   // Malloc the memory for the arrays representing the rules in this rule_set.
-  // Use of cmalloc causes any memory allocation failure to cause an error exit.
+  // Use of emalloc avoids error exits due to memory allocation failure.
   int rule;
   
   rs->substitution_rules_regex =
-    (pcre2_code **)cmalloc((num_rules + 1) * sizeof(pcre2_code *), (u_char *)"LHS", FALSE);
+    (pcre2_code **)emalloc((num_rules + 1) * sizeof(pcre2_code *), calling_code, error_code);
+  if (*error_code) return;    // ----------------------->
 
   rs->substitution_rules_rhs =
-    (u_char **)cmalloc((num_rules + 1) * sizeof(u_char *), (u_char *)"RHS", FALSE);
+    (u_char **)emalloc((num_rules + 1) * sizeof(u_char *), calling_code, error_code);
+  if (*error_code) return;    // ----------------------->
 
   rs->substitution_rules_rhs_has_operator =
-    (u_char *)cmalloc((num_rules + 1) * sizeof(u_char), (u_char *)"has_operator", FALSE);
+    (u_char *)emalloc((num_rules + 1) * sizeof(u_char), calling_code, error_code);
+  if (*error_code) return;    // ----------------------->
 
   for (rule = 0; rule < num_rules; rule++) {
     rs->substitution_rules_regex[rule] = NULL;
@@ -145,10 +149,14 @@ static void create_arrays_for_rule_set(rule_set_t *rs, int num_rules) {
 
 
 
-int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash, int debug) {
+int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash, int debug,
+			    int calling_code, int *error_code) {
   // Attempt to load the srfname file.
   // If not found, return 0, otherwise expect to find lines of the form <LHS> TAB <RHS> TAB <language code>
   // in the file and return a count of the rules found, or a negative error code
+  //
+  // Returns an error code if memory allocation fails.  The code returned must be supplied in
+  // calling_code.
   lang_specific_rules_t *lsr;
   dahash_table_t *sash = NULL;
   u_char *rulesfile_in_mem, *p, *line_start = NULL, *rhs_start = NULL, *current_field = NULL,
@@ -158,7 +166,7 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
   size_t rulesfile_size, patlen = 0, rhslen = 0, error_offset;
   CROSS_PLATFORM_FILE_HANDLE H;
   HANDLE MH;
-  int error_code = 0, lncnt = 0, fldcnt, rule, rules_with_operators_in_RHS = 0, e;
+  int lncnt = 0, fldcnt, rule, rules_with_operators_in_RHS = 0, e;
   BOOL explain = (debug >= 1);
 
   if (srfname == NULL) return 0; // ----------------------------------------------------->
@@ -169,8 +177,9 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
   }
   if (explain) printf("Loading substitution_rules from %s\n", srfname);
   fflush(stdout);
-  rulesfile_in_mem = (u_char *)mmap_all_of(srfname, &rulesfile_size, FALSE, &H, &MH, &error_code);
-  if (explain) printf("Loaded substitution_rules from %s.  Error code is %d\n", srfname, error_code);
+  rulesfile_in_mem = (u_char *)mmap_all_of(srfname, &rulesfile_size, FALSE, &H, &MH, error_code);
+  if (explain) printf("Loaded substitution_rules from %s.  Error code is %d\n", srfname, *error_code);
+  if (*error_code) return 0;  // ------------------->
   fflush(stdout);
 
 
@@ -217,7 +226,8 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
 	  lsr = (lang_specific_rules_t *)dahash_lookup(sash, lang_code, 1);  // 1 means add the key if it's not already there.
 	  if (lsr == NULL) {
 	    printf("Error: dahash_lookup failed for %s\n", lang_code);  // Shouldn't ever happen.
-	    return -1;  // --------------------- Need to make up an error code --------------->
+	    *error_code = -40083;
+	    return 0;  // --------------------- Need to make up an error code --------------->
 	  }
 	  lsr->num_substitution_rules++;   // This will have been zeroed if it's a newly created entry
 	  lncnt++;  
@@ -253,9 +263,11 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
       // If first byte of key is null, this slot is unused
       lsr = (lang_specific_rules_t *)(hep + sash->key_size);  // key_size includes terminating NUL
       // Create the new rule_set object
-      lsr->rule_set = (rule_set_t *)cmalloc(sizeof(rule_set_t), (u_char *)"rule_set", FALSE);
+      lsr->rule_set = (rule_set_t *)emalloc(sizeof(rule_set_t), calling_code, error_code);
+      if (*error_code) return 0;  // ------------------------------->
       lsr->rule_set->num_substitution_rules = 0;
-      create_arrays_for_rule_set(lsr->rule_set, lsr->num_substitution_rules);
+      create_arrays_for_rule_set(lsr->rule_set, lsr->num_substitution_rules, calling_code, error_code);
+      if (*error_code) return 0;   // ---------------------------------->
       if (explain) printf("Created arrays for %d %s rules.\n",
 				  lsr->num_substitution_rules, hep);
     }
@@ -319,16 +331,18 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
 	    }
 
 	    lsr->rule_set->substitution_rules_regex[rule] = pcre2_compile(line_start, patlen, PCRE2_UTF|PCRE2_CASELESS,
-									  &error_code, &error_offset, NULL);
+									  error_code, &error_offset, NULL);
 	    // Will be NULL if compilation failed.
 	    if (lsr->rule_set->substitution_rules_regex[rule] == NULL) {
 	      u_char errbuf[200];
-	      pcre2_get_error_message(error_code, errbuf, 199);
+	      pcre2_get_error_message(*error_code, errbuf, 199);
 	      if (explain) printf("Compile failed for rule starting with %s.  Error_code: %d: %s\n",
-				     line_start, error_code, errbuf);
+				     line_start, *error_code, errbuf);
+	      if (*error_code) return 0;  // ------------------------------->
 	    }
 
-	    lsr->rule_set->substitution_rules_rhs[rule] = cmalloc(rhslen + 1, (u_char *)"RHS", FALSE);
+	    lsr->rule_set->substitution_rules_rhs[rule] = emalloc(rhslen + 1, calling_code, error_code);
+	    if (*error_code) return 0;  // ------------------------------->
 	    utf8_lowering_ncopy(lsr->rule_set->substitution_rules_rhs[rule], rhs_start, rhslen);
 			
 	    lsr->rule_set->substitution_rules_rhs[rule][rhslen] = 0;
@@ -356,9 +370,9 @@ int load_substitution_rules(u_char *srfname, dahash_table_t **substitutions_hash
   unmmap_all_of(rulesfile_in_mem, H, MH, rulesfile_size);
 
   if (error_code < 0) {
-    printf("Error code is %d\n", error_code);
+    printf("Error code is %d\n", *error_code);
     unload_substitution_rules(substitutions_hash, debug);
-    return error_code;
+    return 0;
   }
 
 

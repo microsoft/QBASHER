@@ -42,12 +42,12 @@
 #include "../utils/dahash.h"
 #include "QBASHQ.h"
 
-#define QBASHER_DEFINED_ERROR_CODES 81
+#define MAX_QBASHER_DEFINED_ERROR_CODE 83
 
-// Severity (0, 1, 2) * 100000 + Category (0, 1, 2, 3) * 10000 + error number % 10000
+// Severity (0, 1, 2) * 100000 + Category (0, 1, 2, 3, 4) * 10000 + error number % 10000
 // 
 // Severity: Unknown, Error, Fatal Error
-// Category: Unknown, I/O, Memory, Syscall
+// Category: Unknown, I/O, Memory, Syscall, NotFound
 //
 err_desc_t error_code_explanations[] = {
 	{ 0, "No errror.\n" },
@@ -129,8 +129,11 @@ err_desc_t error_code_explanations[] = {
 	{ 200076, "Internal sanity test failed: prefix signature test.\n" },
 	{ 200077, "Internal sanity test failed: signature test.\n" },  // Not used!!
 	{ 78, "Internal sanity test failed: zero skip block length in show_postings().\n" },
-	{ 20079, "Failed to allocate memory for substitution rules.  Substitutions turned off.\n" },
-	{ 23080, "Error return from WideCharToMultiByte() in NativeExecuteQueryAsync().\n" },
+	{ 200079, "Failed to allocate memory for substitution rules.  Substitutions turned off.\n" },
+	{ 230080, "Error return from WideCharToMultiByte() in NativeExecuteQueryAsync().\n" },
+	{ 220081, "Object Store: malloc failure for segment_rules in NativeInitializeSharedFiles().\n" },
+	{ 220082, "Object Store: malloc failure for subsitution_rules in NativeInitializeSharedFiles().\n" },
+	{ 40083, "Language lookup failed while loading segment or substitution rules.\n" },
 };
 
 
@@ -145,7 +148,7 @@ err_desc_t *explain_error(int code) {
 	//category = code / 10000;
 	code = code % 10000;
 	tableoff = code;
-	if (tableoff > QBASHER_DEFINED_ERROR_CODES) tableoff = 1;
+	if (tableoff > MAX_QBASHER_DEFINED_ERROR_CODE) tableoff = 1;
 	return error_code_explanations + tableoff;
 }
 
@@ -154,7 +157,7 @@ void print_errors() {
 	int c, code, severity, category;
 	printf("Table of QBASHQ API error return codes:\n"
 		"========================================\n");
-	for (c = 0; c < QBASHER_DEFINED_ERROR_CODES; c++) {
+	for (c = 0; c <= MAX_QBASHER_DEFINED_ERROR_CODE; c++) {
 		code = error_code_explanations[c].code;
 		severity = code / 100000;
 		code = code % 100000;
