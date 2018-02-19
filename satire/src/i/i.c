@@ -132,7 +132,8 @@ int main(int argc, char **argv) {
 	p = q;
 	docid = strtol(p, &q, 10);
 	if (p == q) {
-	  printf("Error: missing docid.\n");
+	  printf("Error: missing docid.  lines read %llu, termid  %d. Runlen was %d, item %d.  Current char '%c'\n",
+		 lines_read, termid, runlen, r, *p);
 	  exit(1);
 	}
 	store_least_sig_n_bytes((u_ll)docid, bytebuf, BYTES_FOR_RUN_LEN);

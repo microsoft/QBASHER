@@ -109,17 +109,18 @@ static void insert_in_fake_heap(int docid, int score) {
     }
   }
   if (!inserted) {
+    // Must insert it at the end.
     fake_heap[items_in_fake_heap++] = docid;
   }
 }
 
-static void process_query(int *query_array, int q_len, byte *vocab_in_mem, byte *if_in_mem,
+static void process_query(int queryid, int *query_array, int q_len, byte *vocab_in_mem, byte *if_in_mem,
 			  size_t vocab_size, size_t if_size, int *accumulators) {
   int q, t = 0, terms_still_going = q_len, docid;
   byte *vocab_entry;
   u_ll tmp, if_offset, postings_processed = 0;
 
-  if (params.debug) fprintf(stderr, "Q: Processing a query.\n");
+  if (params.debug) fprintf(stderr, "Q: Processing query %d.\n", queryid);
 
   memset(accumulators, 0, params.numDocs * sizeof(int));
   memset(fake_heap, 0, params.k * sizeof(int));
@@ -162,6 +163,10 @@ static void process_query(int *query_array, int q_len, byte *vocab_in_mem, byte 
 				    term_control_block[q].highest_unprocessed_score,
 				    term_control_block[q].current_run_len);
 
+    } else {
+      fprintf(stderr, "Error: the number of postings for term %d is zero. That can't be!\n", 
+	      t);
+      exit(1);
     }
   }
   
@@ -231,17 +236,21 @@ static void process_query(int *query_array, int q_len, byte *vocab_in_mem, byte 
   // ------ now produce the ranking ---------
   if (params.debug) fprintf(stderr, "Q: Producing a ranking.\n");
 
-  printf("Query:");
-  for (q = 0; q < q_len; q++) {
-    printf(" %d", query_array[q]);
-  }
-  printf("\n");
+  // Commented-out statements produce format used prior to changing over
+  // to TREC-style submission format.
+  //printf("Query %d:", queryid);
+  //for (q = 0; q < q_len; q++) {
+  //  printf(" %d", query_array[q]);
+  //}
+  //printf(" ...  k = %d\n", params.k);
 
   for (t = 0; t < items_in_fake_heap; t++) {
-    printf("   %5d %7d %7d   # rank, docid, score\n",
-	   t + 1, fake_heap[t], accumulators[fake_heap[t]]);
+    //    printf("   %5d %7d %7d   # rank, docid, score\n",
+    //	   t + 1, fake_heap[t], accumulators[fake_heap[t]]);
+    printf("%3d Q0 %7d %5d %7d SATIRE\n", queryid, fake_heap[t],
+	   t + 1, accumulators[fake_heap[t]]);
   }
-  printf("\n"); 
+  // printf("\n"); 
 }
 
 
@@ -251,7 +260,7 @@ int main(int argc, char **argv) {
   char *ignore, *fgets_buf, *p, *q, *fname_buf;
   CROSS_PLATFORM_FILE_HANDLE vocabh, ifh;
   HANDLE vocabmh, ifmh;
-  int a, error_code, t, query_array[MAX_QTERMS], q_count = 0, stemlen;
+  int a, error_code, t, query_array[MAX_QTERMS], q_count = 0, stemlen, queryid;
     
 
   setvbuf(stderr, NULL, _IONBF, 0);
@@ -290,21 +299,34 @@ int main(int argc, char **argv) {
   fname_buf = NULL;
 
   if (params.debug) fprintf(stderr, "Q: About to start reading queries from stdin ...\n"
-		"Queries are just lists of space separated (integer) termids\n");
+			    "Queries consist of a numeric query-id, a tab, then a list of\n"
+			    "space separated (integer) termids.  Currently the termids are\n"
+			    "indices into the table of actual termids.  I.e. termid 12\n"
+			    "signifies the 13th termid in the table, whose actual id might be 5017\n");
   
   while (fgets(fgets_buf, MAX_FGETS, stdin) != NULL) {
     if (params.debug) fprintf(stderr, "\n\nQ: Read and process a line.\n%s\n", fgets_buf);
     q_count++;
     p = fgets_buf;
+    queryid = strtol(p, &q, 10);
+    if (p == q) break;  // no integer found
+    p = q;
+    while (*p == ' ') p++;
+    if (*p != '\t') {
+      fprintf(stderr, "Error:  A query must consist of a query id followed by a tab followed by termids\n");
+      exit(1);
+    }
+    p++;
     t = 0;
     while (*p >= ' ') {
-      query_array[t++] = strtol(p, &q, 10);
+      query_array[t] = strtol(p, &q, 10);
       if (p == q) break;  // no integer found
+      t++;
       p = q;
     }
 
     if (params.debug) fprintf(stderr, "    terms inthis query: %d\n", t);
-    process_query(query_array, t, vocab_in_mem, if_in_mem, vocab_size, if_size,
+    process_query(queryid, query_array, t, vocab_in_mem, if_in_mem, vocab_size, if_size,
 		  accumulators);
     if (q_count % 10 == 0) fprintf(stderr, "%8d\n", q_count);
   }

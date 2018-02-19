@@ -1,4 +1,7 @@
 #! /usr/bin/perl -w
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT license.
+
 $|++;
 
 # Bhaskar's queries comprise a query-id then a space-separated list of term-ids
@@ -28,12 +31,14 @@ close(T);
 
 print "Mappings read for $count terms.\n";
 
-
+$qcnt = 0;
 while (<I>) {
     chomp;
     if (/^([0-9]+)\t(.*)/) {
-	#$quid = $1;
+	$quid = $1;
+	$qcnt++;
 	$terms = $2;
+	print O $quid, "\t";
 	@terms = split /\s+/, $terms;
 	foreach $t (@terms) {
 	    if (defined($term{$t})) {
@@ -53,7 +58,7 @@ while (<I>) {
 close(I);
 close(O);
 
-print "Queries converted.  Ouput in $outfile\n";
+print "Queries converted: $qcnt.  Ouput in $outfile\n";
 
 exit(0);
     

@@ -1,4 +1,7 @@
 #! /usr/bin/perl -w
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT license.
+
 $|++;
 
 die "Usage: $0 <infile> <outfile> <termids_file>\n"
@@ -17,24 +20,24 @@ die "Can't write to $tidfile"
 
 
 $curterm = -1;
-$count = 1;
 $stillgoing = 1;
 $numTerms = 0;
 $maxDocNo = -1;
 
 $_ = <I>;
+@f = split /\t/;
+$count = 1;
 while ($stillgoing) {
-    @f = split /\t/;
 
     if ($f[0] != $curterm) {
 	# Output the term-id
+	print O "\n" if $curterm >= 0;
 	$numTerms++;
 	print T "$f[0]\n";
 	print O sprintf("%08d\t", $f[0]);
 	$curterm = $f[0];
-	$curscore = -1;
 	undef @docids;
-	print "Term $curterm\n" if ($curterm % 10 == 0);
+	print "Term $numTerms: $curterm\n";
     }
     
     # We're at the start of a run
@@ -52,6 +55,10 @@ while ($stillgoing) {
 	}
 	$count++;
 	@f = split /\t/;
+	if (/[0-9]/ && $#f != 2) {
+	    print STDERR "Error: $#f!  Line was '$_'\n";
+	    exit(1);
+	}
 	$qscore = int($f[2] * 10000);
     }
 
@@ -60,7 +67,7 @@ while ($stillgoing) {
     for ($i = 0; $i < $runlen; $i++) {
 	print O " $docids[$i]";
     }
-    print O "#\n";
+    print O "#";
 }
 
 # Have to now print the last run.
