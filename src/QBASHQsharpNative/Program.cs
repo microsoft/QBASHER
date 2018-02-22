@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;   // Seems to be needed for Platform Invoke  (pinvoke)
@@ -133,7 +134,7 @@ namespace QBASHQsharpNative
         static void issueResponse(string QBQoutput)
         {
             bool lockAcquired = false;
-            while (! lockAcquired)
+            while (!lockAcquired)
             {
                 Monitor.TryEnter(writeLock, ref lockAcquired);
                 if (lockAcquired)
@@ -141,7 +142,8 @@ namespace QBASHQsharpNative
                     Console.WriteLine("{0}", QBQoutput);
                     Monitor.Exit(writeLock);
                 }
-                else {
+                else
+                {
                     Thread.Sleep(1);
                 }
             }
@@ -164,7 +166,7 @@ namespace QBASHQsharpNative
         {
             Boolean queryLaunched = false, verbose = false;
             int q;
- 
+
             while (!queryLaunched)
             {
                 for (q = 0; q < queryStreams; q++)
@@ -220,14 +222,14 @@ namespace QBASHQsharpNative
             System.Text.Encoding utf8_encoding = System.Text.Encoding.UTF8;
             int q;
             Stopwatch stopWatch = new Stopwatch();
- 
+
             string line,
                 ixDir = @"../test_data/wikipedia_titles", listOfPaths = "", partialQuery = "";
             string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch,",
                 "/QBASH.segment_rules,", "/QBASH.substitution_rules",
                 //"/QBASH.output" 
             };
-            char[] delims = {'='};
+            char[] delims = { '=' };
 
             foreach (string arg in args)
             {
@@ -236,7 +238,8 @@ namespace QBASHQsharpNative
                 else if (argval[0] == "-object_store_files") listOfPaths = argval[1];
                 else if (argval[0] == "-query_streams") queryStreams = Int32.Parse(argval[1]);
                 else if (argval[0] == "-pq") partialQuery = argval[1];
-                else if (argval[0] == "-help") {
+                else if (argval[0] == "-help")
+                {
                     Console.WriteLine("\nQBASHQsharpNative.exe is a simple front end to the QBASHER API, designed to help find API bugs");
                     Console.WriteLine("prior to loading the DLL into Object Store.  It supports the following options:\n");
                     Console.WriteLine("  -help                    - show this message.");
@@ -250,19 +253,57 @@ namespace QBASHQsharpNative
                     Environment.Exit(0);
                 }
             }
-             
 
-            // If we haven't explicitly specified a list of object_store_files, compose the default one.
-            if (listOfPaths.Equals("")) {
-                foreach (string file in files)
+
+            // If we haven't explicitly specified a list of object_store_files, then try to read the .ini file which will be used 
+            // by the Object Store coproc.  Otherwise,  compose the default one.  
+            if (listOfPaths.Equals(""))
+            {
+                Console.WriteLine("object_store_files not specified."); 
+                if (File.Exists(ixDir + "/SharedFileStore.ini"))
                 {
-                    listOfPaths += (ixDir + file);
+                    Console.WriteLine("Reading file list from {0}", ixDir + "/SharedFileStore.ini");
+                    try
+                    {
+                        using (StreamReader reader = File.OpenText(ixDir + "/SharedFileStore.ini"))  // from the OS .ini file
+                        {
+                            while ((line = reader.ReadLine()) != null)
+                            {
+                                // Use the Regex /^File=(\S+)/ to extract a file name fname from line
+                                Match match = Regex.Match(line, "^File=(\\S+)");
+                                if (match.Success)
+                                {
+                                    string file = match.Groups[1].Value;
+                                    listOfPaths += (ixDir + "/" + file + ",");
+                                }
+                            }  // end of loop reading .ini lines.
+ 
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        Console.WriteLine("{0} exists but can't be read.  Error was {1}", ixDir + "/SharedFileStore.ini", e);
+                    }
+                }
+                else
+                {
+                    // If the .ini file doesn't exist, compose the default path.
+                    Console.WriteLine("In the absence of an object_store_files= argument or a SharedFileStore.ini, composing file list from hard-coded names.");
+                    foreach (string file in files)
+                    {
+                        listOfPaths += (ixDir + file);
+                    }
                 }
             }
+            else
+            {
+                Console.WriteLine("Using file list supplied in object_store_files= parameter");
+            }
+
 
             Console.OutputEncoding = Encoding.UTF8;  // Necessary.  See http://stackoverflow.com/questions/2213541/vietnamese-character-in-net-console-application-utf-8
 
-            Console.WriteLine("Welcome to QBASHQsharpNative.  {0} query streams.  Files are:\n{1}",queryStreams, listOfPaths);
+            Console.WriteLine("Welcome to QBASHQsharpNative.  {0} query streams.  Files are:\n{1}", queryStreams, listOfPaths);
 
 
             if (System.IntPtr.Size != 8)
@@ -291,52 +332,56 @@ namespace QBASHQsharpNative
             // Now read and process the queries, either from a a -pq string, or from a file, or from the Console
 
             stopWatch.Start();
-            if (partialQuery != "") {
+            if (partialQuery != "")
+            {
                 processOneInputLine(partialQuery);
                 queries_processed++;
-            } else if (listOfPaths.Contains(".query_batch"))
+            }
+            else if (listOfPaths.Contains(".query_batch"))
             {
                 using (StreamReader reader = File.OpenText(ixDir + "/QBASH.query_batch"))  // from a file.........................
                 {
-                     while ((line = reader.ReadLine()) != null)
+                    while ((line = reader.ReadLine()) != null)
                     {
                         processOneInputLine(line);
                         queries_processed++;
                     }  // end of loop reading queries.
 
                 }
-            } else
+            }
+            else
             {
                 // Loop over queries and options read in from console
                 Console.WriteLine("Please enter queries (or tab-separated queries + options) one per line.");
                 Console.WriteLine();
 
                 while ((line = Console.ReadLine()) != null)                                          // from Stdin .........................
-                    {
-                        processOneInputLine(line);
-                        queries_processed++;
-                    }  // end of loop reading queries.
+                {
+                    processOneInputLine(line);
+                    queries_processed++;
+                }  // end of loop reading queries.
             }
 
 
 
             // Wait for the straggler threads to finish.
             for (q = 0; q < queryStreams; q++)
+            {
+                while (busy[q])
                 {
-                    while (busy[q])
+                    if (workers[q].Wait(zeroms))
                     {
-                        if (workers[q].Wait(zeroms))
-                        {
-                            busy[q] = false;
-                            ////workers[q].Dispose();  ?????????????
-                        }
+                        busy[q] = false;
+                        ////workers[q].Dispose();  ?????????????
                     }
                 }
-                stopWatch.Stop();
-
-                Console.WriteLine("Done.  {0} queries processed.  Total elapsed milliseconds since initialisation: {1}. QPS  = {2:00}",
-                    queries_processed, stopWatch.ElapsedMilliseconds, (1000.0  * (double)queries_processed / (double)stopWatch.ElapsedMilliseconds));
-                Environment.Exit(0);
             }
+            stopWatch.Stop();
+
+            Console.WriteLine("Done.  {0} queries processed.  Total elapsed milliseconds since initialisation: {1}. QPS  = {2:00}",
+                queries_processed, stopWatch.ElapsedMilliseconds, (1000.0 * (double)queries_processed / (double)stopWatch.ElapsedMilliseconds));
+            Environment.Exit(0);
         }
     }
+}
+

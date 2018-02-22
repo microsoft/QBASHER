@@ -2070,3 +2070,9 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     3. Add some error codes to error_explanations.c, fix a small bug
        and make some small modes.
        
+    
+*** v1.5.134-OS developer1 21 Feb 2018 ***  Changes to C# code only
+    1. Modify QBASHQSharpNative to read the filenames from
+       SharedFileStore.ini, if it exists, and if no
+       -object_store_files=  option has been given.
+    

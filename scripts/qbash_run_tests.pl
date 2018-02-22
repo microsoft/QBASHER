@@ -79,18 +79,8 @@ if ($use_gcc_executables) {
     $vocab_lister = "../src/QBASH_vocab_lister.exe";
     print "\n ... Will try to use GCC-built executables\n\n";
 } else {
-    $config = "Release";
-    $binDir = "../src/visual_studio/x64/${config}";
-    # Can't work out how to get VS2015 to put the C# exe into the same directory as the others :-(
-    if (-x "../src/QBASHQsharpNative/x64/Release/QBASHQsharpNative.exe") {
-	copy("../src/QBASHQsharpNative/x64/${config}/QBASHQsharpNative.exe", $binDir);
-	copy("../src/QBASHQsharpNative/x64/${config}/QBASHQsharpNative.exe.config", $binDir);
-	copy("../src/QBASHQsharpNative/x64/${config}/QBASHQsharpNative.pdb", $binDir);
-	chmod 0755, "$binDir/QBASHQsharpNative.exe";
-	chmod 0755, "$binDir/QBASHQsharpNative.exe.config";
-	chmod 0755, "$binDir/x64/${config}/QBASHQsharpNative.exe";
-    }	   
-    $vocab_lister = "../src/visual_studio/x64/${config}/QBASH_vocab_lister.exe";
+    $binDir = "../src/visual_studio/x64/Release";
+    $vocab_lister = "../src/visual_studio/x64/Release/QBASH_vocab_lister.exe";
     print "\n ... Will try to use VS2015-built executables\n\n";
 }
 

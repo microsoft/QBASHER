@@ -40,8 +40,22 @@ die "Usage: $0 <QBASHQ_binary>
 $qp = $ARGV[0];
 $qp = "../src/visual_studio/x64/Release/QBASHQ.exe" if ($qp eq "default");
 
+$fail_fast = 0;
+
+for ($a = 1; $a <= $#ARGV; $a++) {
+    if ($ARGV[$a] eq "-fail_fast") {
+	$fail_fast = 1;
+    } else {
+	$ix = $ARGV[$a];
+    }
+}
+
+
 $qp =~ s/QBASHQ/QBASHQsharpNative/;
 $qp =~ s/qbashq/QBASHQsharpNative/;
+
+print "$0: Executable is $qp\n\n";
+
 
 die "$qp is not executable\n" unless -x $qp;
 
@@ -64,6 +78,21 @@ generate_problem_qset();  # A few mongrel queries including one which
 $cmd = "$qp $obstorfiles_w < $qset";
 $code = system($cmd);
 die "Command failed: $cmd\n" if $code;
+
+
+print "\n\nMaking sure that QBASHQsharpNative.exe can read SharedFileStore.ini ..\n";
+$cmd = "$qp -index_dir=$ix -pq='Ancient Agora'";
+$rslts = `$cmd`;
+die "Command $cmd failed with code $?\n" if $?;
+
+if (! ($rslts =~/Ancient Agora/s)){
+    print "\nSharedFileStore.ini:             [FAIL]\n";
+    $errs++;
+    print "Command was: '$cmd\n\nResults were\n $rslts";
+    exit(1) if $fail_fast;
+} else {
+    print "\nSharedFileStore.ini:             [PASS]\n\n";
+}
 
 
 
@@ -122,18 +151,24 @@ for $batchsize (@runs) {
     die "Batch run crashed with code $code\n" if $code;
 
     #unlink $tfile;
-    if ($qps < $last_qps / 4) {
-	$errs++;
+    if ($qps < ($last_qps / 4)) {
+	print "QPS: $qps -- Last QPS: $qps\n";
+	$time_errs++;
 	last;
     }
     $last_qps = $qps;
 
+}
 
 
+
+if ($time_errs) {
+    print "\n\nQuery processing has bogged down (QPS dropped by > 75%), [FAIL]\n";
+    $errs++;
 }
 
 if ($errs) {
-	print "\n\nQuery processing has bogged down (QPS dropped by > 75%), quitting\n";
+    print "\n\n$0 Failed:  $errs errors encountered.\n";
 } else {
     print "\n\n       Top hole, what!!\n";
 }
