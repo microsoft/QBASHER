@@ -77,7 +77,10 @@ git:
 	git add `find . -iname \*.sln`
 	git add `find . -iname \*.vcxproj`
 	git add `find .. -iname \*.pl`
-	git add `find ..  -maxdepth 3 -iname \*.txt`  # Avoid adding VS filelist
+	# maxdepth avoids adding the VS filelist, prune stops adding any .txt files under the satire subdir
+	# The -print must be there, otherwise the satire sub-directory will be added.
+	# See http://www.theunixschool.com/2012/07/find-command-15-examples-to-exclude.html
+	git add `find ..  -maxdepth 3 -type d -name satire -prune -o -iname \*.txt -print`  # Avoid adding VS filelist
 	git add `find .. -iname \*README\*`
 	git add `find .. -iname \*LICENSE\*`
 	git add `find .. -iname \*VERSION\*`
