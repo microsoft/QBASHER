@@ -33,7 +33,7 @@ git:
 	git add `find . -iname \*.sln`
 	git add `find . -iname \*.vcxproj`
 	git add `find .. -iname \*.pl`
-	git add `find .. -iname \*.txt`
+	git add */*.txt
 	git add `find .. -iname \*README\*`
 	git add `find .. -name Makefile\*`
 
