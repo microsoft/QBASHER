@@ -6,7 +6,7 @@
 typedef struct {
   char *inputFileName;
   char *outputStem;
-  int numDocs, numTerms;
+  int numDocs;
 } params_t;
 
 extern params_t params;

@@ -5,7 +5,7 @@
 
 typedef struct {
   char *indexStem;
-  int numTerms, numDocs, k, lowScoreCutoff, postingsCountCutoff, debug;
+  int numDocs, k, lowScoreCutoff, postingsCountCutoff, debug;
 } params_t;
 
 extern params_t params;

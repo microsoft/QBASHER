@@ -1587,3 +1587,30 @@ unsigned long long calculate_signature_from_first_letters(u_char *str, int bits)
 }
 
 
+void store_least_sig_n_bytes(u_ll data, byte *buf, int n) {
+  // Write the n least significant bytes of data into buf
+  // in big-endian format, i.e. least-significant last
+  // buf must exist and have at least n bytes of storage.
+  int i;
+  for (i = n - 1; i >= 0; i--) {
+    buf[i] = (byte)(data & 0xFF);
+    data >>= 8;
+  }
+}
+
+
+u_ll make_ull_from_n_bytes(const byte *data, const int n) {
+  // Convert the first n bytes of data into an unsigned long long
+  // The bytes may be assumed to have been written
+  // in big-endian format, i.e. least-significant last
+  int i;
+  u_int rslt = 0;
+  for (i = 0; i < n; i++) {
+    rslt <<= 8;
+    rslt |= data[i];
+  }
+  return rslt;
+}
+
+
+

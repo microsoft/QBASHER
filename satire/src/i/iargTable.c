@@ -18,7 +18,6 @@ arg_t args[] = {
   { "inputFileName", ASTRING, (void *)&(params.inputFileName), "This is the file of text containing the T-D scores for each term, in TSV format. "},
   { "outputStem", ASTRING, (void *)&(params.outputStem), "This will be the stem of the index files produced."},
   { "numDocs", AINT, (void *)&(params.numDocs), "How many documents in the corpus."},
-  { "numTerms", AINT, (void *)&(params.numTerms), "The number of distinct terms in the corpus."},
   { "", AEOL, NULL, "" }
   };
 
@@ -27,7 +26,6 @@ void initialiseParams(params_t *params) {
   params->inputFileName = NULL;
   params->outputStem = NULL;
   params->numDocs = 0;
-  params->numTerms = 0;
 }
 
 

@@ -173,3 +173,9 @@ int count_ones_b(byte b);
 void test_count_ones_b();
 
 unsigned long long calculate_signature_from_first_letters(u_char *str, int bits);
+
+void store_least_sig_n_bytes(u_ll data, byte *buf, int n);
+
+u_ll make_ull_from_n_bytes(const byte *data, const int n);
+
+

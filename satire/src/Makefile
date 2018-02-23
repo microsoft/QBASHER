@@ -26,6 +26,10 @@ i.exe:	i/i.o i/iargTable.o u/utility_nodeps.o u/arg_parser.o u/unicode.o
 q.exe:	q/q.o q/qargTable.o u/utility_nodeps.o u/arg_parser.o u/unicode.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
+clean:
+	rm -f */*.o
+	rm -f *.exe
+
 
 git:
 	git add `find . -iname \*.c`

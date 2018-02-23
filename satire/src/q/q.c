@@ -25,20 +25,6 @@ static void print_usage(char *progname, arg_t *args) {
   exit(1);
 }
 
-static u_ll make_ull_from_n_bytes(byte *data, int n) {
-  // Convert the first n bytes of data into an unsigned long long
-  // The bytes may be assumed to have been written
-  // in big-endian format, i.e. least-significant last
-  int i;
-  u_int rslt = 0;
-  for (i = 0; i < n; i++) {
-    rslt <<= 8;
-    rslt |= data[i];
-  }
-  return rslt;
-}
-
-
 typedef struct {
   int highest_unprocessed_score;
   int current_run_len;
@@ -114,13 +100,40 @@ static void insert_in_fake_heap(int docid, int score) {
   }
 }
 
+
+static int vcmp(const void *ip, const void *jp) {
+  // Comparison function for bsearch.  Numerically compare two termids
+  // represented as BYTES_FOR_TERMID bytes in byte-order independent order
+  byte *bip = (byte *)ip, *bjp = (byte *)jp;
+  int i, j;
+  i = (int) make_ull_from_n_bytes(bip, BYTES_FOR_TERMID);
+  j = (int) make_ull_from_n_bytes(bjp, BYTES_FOR_TERMID);
+  if (i > j) return 1;
+  if (j > i) return -1;
+  return 0;
+}
+
+
+
+static int term_lookup(int termid, byte *vocab_in_mem, size_t vocab_terms) {
+  byte *ve, key[BYTES_IN_VOCAB_ENTRY] = {0};
+  store_least_sig_n_bytes((u_ll)termid, key, BYTES_FOR_TERMID);
+  ve = (byte *)bsearch(key, vocab_in_mem, vocab_terms, BYTES_IN_VOCAB_ENTRY, vcmp);
+  if (ve == NULL) {
+    return -1;
+  } else return (ve - vocab_in_mem) / BYTES_IN_VOCAB_ENTRY;
+}
+
+
+
 static void process_query(int queryid, int *query_array, int q_len, byte *vocab_in_mem, byte *if_in_mem,
 			  size_t vocab_size, size_t if_size, int *accumulators) {
   int q, t = 0, terms_still_going = q_len, docid;
   byte *vocab_entry;
   u_ll tmp, if_offset, postings_processed = 0;
 
-  if (params.debug) fprintf(stderr, "Q: Processing query %d.\n", queryid);
+  if (params.debug) fprintf(stderr, "Q: Processing query %d.  %d accumulators.\n",
+			    queryid, params.numDocs);
 
   memset(accumulators, 0, params.numDocs * sizeof(int));
   memset(fake_heap, 0, params.k * sizeof(int));
@@ -135,7 +148,21 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
 
   // ------------- Set up the control blocks --------------
   for (q = 0; q < q_len; q++) {
-    t = query_array[q];
+    if (query_array[q] == 0) {
+      // A check for a regression in the indexer
+      int t = make_ull_from_n_bytes(vocab_in_mem, BYTES_FOR_TERMID);
+      if (t != 0) {
+	printf("Error: vocab_in_mem doesn't start with term 0.  t = %d\n", t);
+	exit(1);
+      }
+    }
+    
+    t = term_lookup(query_array[q], vocab_in_mem, vocab_size / BYTES_IN_VOCAB_ENTRY);
+    if (t < 0) {
+      printf("Error: Lookup failed for term %d\n", query_array[q]);
+      exit(1);
+    }
+    
     vocab_entry = vocab_in_mem + t * BYTES_IN_VOCAB_ENTRY;
     tmp = make_ull_from_n_bytes(vocab_entry + BYTES_FOR_TERMID, BYTES_FOR_POSTINGS_COUNT);
     term_control_block[q].postings_remaining = (int)tmp;
@@ -260,7 +287,8 @@ int main(int argc, char **argv) {
   char *ignore, *fgets_buf, *p, *q, *fname_buf;
   CROSS_PLATFORM_FILE_HANDLE vocabh, ifh;
   HANDLE vocabmh, ifmh;
-  int a, error_code, t, query_array[MAX_QTERMS], q_count = 0, stemlen, queryid;
+  int a, error_code, t, query_array[MAX_QTERMS], q_count = 0, stemlen, queryid, termid;
+  double start_time = what_time_is_it();
     
 
   setvbuf(stderr, NULL, _IONBF, 0);
@@ -274,7 +302,7 @@ int main(int argc, char **argv) {
   }
   fprintf(stderr, "Q: Args assigned\n");
 
-  if (params.indexStem == NULL  || params.numTerms <= 0 || params.numDocs <= 0) {
+  if (params.indexStem == NULL  || params.numDocs <= 0) {
     print_usage(argv[0], (arg_t *)(&args));
   }
 
@@ -291,8 +319,8 @@ int main(int argc, char **argv) {
   strcpy(fname_buf + stemlen, ".if");
   if_in_mem = mmap_all_of((byte *)fname_buf, &if_size, FALSE, &ifh, &ifmh, &error_code);
 
-
   accumulators = cmalloc(params.numDocs * sizeof(int), (u_char *)"accumulators", FALSE);
+  
   fake_heap = cmalloc(params.k * sizeof(int), (u_char *)"fake_heap", FALSE);
  
   free(fname_buf);
@@ -300,9 +328,7 @@ int main(int argc, char **argv) {
 
   if (params.debug) fprintf(stderr, "Q: About to start reading queries from stdin ...\n"
 			    "Queries consist of a numeric query-id, a tab, then a list of\n"
-			    "space separated (integer) termids.  Currently the termids are\n"
-			    "indices into the table of actual termids.  I.e. termid 12\n"
-			    "signifies the 13th termid in the table, whose actual id might be 5017\n");
+			    "space separated (integer) termids.\n");
   
   while (fgets(fgets_buf, MAX_FGETS, stdin) != NULL) {
     if (params.debug) fprintf(stderr, "\n\nQ: Read and process a line.\n%s\n", fgets_buf);
@@ -319,13 +345,19 @@ int main(int argc, char **argv) {
     p++;
     t = 0;
     while (*p >= ' ') {
-      query_array[t] = strtol(p, &q, 10);
+      termid = strtol(p, &q, 10);
       if (p == q) break;  // no integer found
+      if (t >= MAX_QTERMS) {
+	printf("Warning: Query too long.  Only first %d terms considered.\n",
+	       MAX_QTERMS);
+	break;
+      }
+      query_array[t] = termid;
       t++;
       p = q;
     }
 
-    if (params.debug) fprintf(stderr, "    terms inthis query: %d\n", t);
+    if (params.debug) fprintf(stderr, "    terms in this query: %d\n", t);
     process_query(queryid, query_array, t, vocab_in_mem, if_in_mem, vocab_size, if_size,
 		  accumulators);
     if (q_count % 10 == 0) fprintf(stderr, "%8d\n", q_count);
@@ -337,7 +369,8 @@ int main(int argc, char **argv) {
   free(accumulators);
   free(fake_heap);
 
-  fprintf(stderr, "Q: Hallelujah! %d queries processed.\n", q_count);
+  fprintf(stderr, "Q: %d queries processed in %.3f sec.\n",
+	  q_count, what_time_is_it() - start_time);
   
 
 }
