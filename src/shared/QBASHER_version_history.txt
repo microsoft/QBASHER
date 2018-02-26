@@ -2076,3 +2076,8 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        SharedFileStore.ini, if it exists, and if no
        -object_store_files=  option has been given.
     
+*** v1.5.135-OS developer1 26 Feb 2018 ***  Changes to C# code only
+    1. Adding file_output= and file_query_batch options to the
+       C# front-end, because those filenames shouldn't be passed in
+       via SharedFileStore.ini
+       

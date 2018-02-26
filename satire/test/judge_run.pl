@@ -3,8 +3,18 @@
 # First load the judgments into %hj.  hj is indexed by query number
 # and contains semicolon-separated "<document> TAB <score>" pairs
 
-die "Can't load judgments file ../data/DINNER/qdr.txt"
-    unless open J, "../data/DINNER/qdr.txt";
+die "Usage: $0 <judgment_file> <results_file> [<judging_depth>]\n"
+    unless $#ARGV >= 1;
+
+$jfile = $ARGV[0];
+$rsltsfile = $ARGV[1];
+$depth = 1000;   # Maximum rank used in calculating NDCG score.
+$depth = $ARGV[2] if ($#ARGV >= 2);
+
+print "Reading judgments from $jfile and results from $rsltsfile ....\n\n";
+
+die "Can't load judgments file $jfile"
+    unless open J, $jfile;
 
 while (<J>) {
     chomp;
@@ -24,42 +34,89 @@ while (<J>) {
 close(J);
 
 
-# Now read the SATIRE results
+# Now read the results (In either TREC submission format or Bhaskar's format)
 
-die "Can't open bhaskar.out\n"
-    unless open R, "bhaskar.out";
+die "Can't open $rsltsfile\n"
+    unless open R, $rsltsfile;
+$current_qid = -1;
+$ave_dcg = 0;
+
+print 
+"Query  #Rel_found  DCG   #Unjudged
+=====  ==========  ====  =========\n";
 
 while (<R>) {
     chomp;
-    next if (/^\s*$/);
-    if (/^Query\s+([0-9]+):\s/) {
-	if (defined($qid)) {
-	    print "$qid\t$relfound\t", sprintf("%6.4f", $cdg), "\n";
+    s /^\s+//;  # remove leading spaces
+    @f = split /\s+/;
+    if ($#f == 5) {
+	# Assume TREC submission format
+	$qid = $f[0];
+	$did = $f[2];
+	$rank = $f[3];
+    } elsif ($#f == 3) {
+	# Assume Bhaskar's submission format
+	$qid = $f[0];
+	$did = $f[1];
+	$rank = $f[2];
+    } elsif ($#f == 0) {
+	next;
+    } else {
+	$fields = $#f + 1;
+	die "Error: Non-empty lines in $rsltsfile must have either 6 fields (TREC) or 3 (Bhaskar)
+Offending line was $_
+It's field count was $fields\n";
+    }
+	    
+    next if $rank > $depth;
+
+    if ($qid != $current_qid) {
+	if ($current_qid >= 0) {
+	    # Report results for old query
+	    print "$qid\t$relfound\t", sprintf("%6.4f", $cdg), "\t$unjudged\n";
 	    if ($relfound > 0) {
 		$successes++;
 	    } else {
 		$failures++;
 	    }
-	} 
-	$qid = $1;
+	}
+	$ave_dcg += $cdg;
 	$cdg = 0.0;
 	$relfound = 0;
-    } elsif (/\s+([0-9]+)\s+([0-9]+)\s+/) {
-	$rank = $1;
-	$did = $2;
-	$gain = lookup_gain($qid, $did);
-	$dg = $gain /log2($rank + 1);
-	$cdg += $dg;
-	$relfound++ if ($gain > 0);
-    } else {
-	die "Unmatched record in bhaskar.out: $_\n";
+	$unjudged = 0;
+	$current_qid = $qid;
+    }
+    
+    $gain = lookup_gain($qid, $did);
+    if ($gain < 0) {
+	$unjudged++;
+	$gain = 0;
+    }
+    $dg = $gain /log2($rank + 1);
+    $cdg += $dg;
+    $relfound++ if ($gain > 0);    
+}
+
+if ($qid != $current_qid) {
+    if ($current_qid >= 0) {
+	# Report results for old query
+	print "$qid\t$relfound\t", sprintf("%6.4f", $cdg), "\t$unjudged\n";
+	if ($relfound > 0) {
+	    $successes++;
+	} else {
+	    $failures++;
+	}
     }
 }
+
+$ave_dcg /= ($successes + $failures);
 
 print "
 
 Successes: $successes
 Failures: $failures
+
+Average DCG: $ave_dcg
     ";
 
 exit(0);
@@ -85,5 +142,5 @@ sub lookup_gain {
 	    return $2 if $1 eq $did;
 	}
     }
-    return 0;
+    return -1;   # Signal unjudged.
 }

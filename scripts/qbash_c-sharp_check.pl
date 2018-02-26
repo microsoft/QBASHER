@@ -94,6 +94,21 @@ if (! ($rslts =~/Ancient Agora/s)){
     print "\nSharedFileStore.ini:             [PASS]\n\n";
 }
 
+print "\n\nAnd that it can deal with -file_output and -file_query_batch in addition to SharedFileStore.ini. Note
+that these files must end in .output and .query_batch respecively and must live in the index directory.\n";
+
+$cmd = "$qp -index_dir=$ix -pq='Ancient Agora' -file_output=QBASH.output -file_query_batch=QBASH.query_batch";
+$rslts = `$cmd ; cat $ix/QBASH.output`;
+die "Command $cmd failed with code $?\n" if $?;
+if (! ($rslts =~/Ancient Agora/s)){
+    print "\nSharedFileStore.ini++:             [FAIL]\n";
+    $errs++;
+    print "Command was: '$cmd\n\nResults were\n $rslts";
+    exit(1) if $fail_fast;
+} else {
+    print "\nSharedFileStore.ini++:             [PASS]\n\n";
+}
+
 
 
 # Determine how long it takes to start up the exe, after warming up a little

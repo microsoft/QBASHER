@@ -223,7 +223,7 @@ namespace QBASHQsharpNative
             int q;
             Stopwatch stopWatch = new Stopwatch();
 
-            string line,
+            string line, queriesIn = "", resultsOut = "",
                 ixDir = @"../test_data/wikipedia_titles", listOfPaths = "", partialQuery = "";
             string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch,",
                 "/QBASH.segment_rules,", "/QBASH.substitution_rules",
@@ -236,6 +236,8 @@ namespace QBASHQsharpNative
                 string[] argval = arg.Split(delims);
                 if (argval[0] == "-index_dir") ixDir = argval[1];
                 else if (argval[0] == "-object_store_files") listOfPaths = argval[1];
+                else if (argval[0] == "-file_output") resultsOut = argval[1];
+                else if (argval[0] == "-file_query_batch") queriesIn = argval[1];
                 else if (argval[0] == "-query_streams") queryStreams = Int32.Parse(argval[1]);
                 else if (argval[0] == "-pq") partialQuery = argval[1];
                 else if (argval[0] == "-help")
@@ -245,6 +247,8 @@ namespace QBASHQsharpNative
                     Console.WriteLine("  -help                    - show this message.");
                     Console.WriteLine("  -index_dir=<directory>   - A directory potentially containing a single QBASHER index.");
                     Console.WriteLine("  -object_store_files=<comma-separated list of files> - Explicit paths to all the index files. (Instead of index_dir.)");
+                    Console.WriteLine("  -file_output=<filename> - File to which normal output will be written.  Used only if other files come from SharedFileStore.ini.");
+                    Console.WriteLine("  -file_query_batch=File from which a batch of queries are read. Used only if other files come from SharedFileStore.ini.");
                     Console.WriteLine("  -query_streams=<integer> - The degree of parallelism used when running queries.");
                     Console.WriteLine("  -pq=<query_string> - A single QBASHER query string.\n");
                     Console.WriteLine("If no -pq option is given, queries are read one per line, either from stdin or from a file called QBASH.query_batch ");
@@ -277,13 +281,15 @@ namespace QBASHQsharpNative
                                     listOfPaths += (ixDir + "/" + file + ",");
                                 }
                             }  // end of loop reading .ini lines.
- 
+                            if (queriesIn != "") listOfPaths += (ixDir + "/" + queriesIn + ",");
+                            if (resultsOut != "") listOfPaths += (ixDir + "/" + resultsOut + ",");
                         }
                     }
                     catch (IOException e)
                     {
                         Console.WriteLine("{0} exists but can't be read.  Error was {1}", ixDir + "/SharedFileStore.ini", e);
                     }
+
                 }
                 else
                 {
