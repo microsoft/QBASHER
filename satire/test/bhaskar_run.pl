@@ -42,3 +42,10 @@ $cmd = "../../../inst_eval/inst_eval.py -T 3 -c bhaskar.qrels ../test/bhaskar.ou
 
 die "Evaluation command $cmd failed \n"
     if system($cmd);
+
+
+# ------------------------------ Step 6 Evaluating the results using NDCG etc  -----------------------------
+$cmd = "../test/judge_run.pl DINNER/qdr.txt ../test/bhaskar.out 10";
+
+die "Evaluation command $cmd failed \n"
+    if system($cmd);

@@ -11,6 +11,10 @@
 #endif
 #endif
 
+#ifndef PAGESIZE
+#define PAGESIZE 1024   // Used in index warm-up, better to be too small than too big.
+#endif
+
 
 //----------------------------------------------------------------------------------------
 // Providing alternate definitions for items pre-declared in a Windows environment.
@@ -177,5 +181,7 @@ unsigned long long calculate_signature_from_first_letters(u_char *str, int bits)
 void store_least_sig_n_bytes(u_ll data, byte *buf, int n);
 
 u_ll make_ull_from_n_bytes(const byte *data, const int n);
+
+byte touch_all_pages(byte *mem, size_t memsz);
 
 

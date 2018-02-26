@@ -1613,4 +1613,21 @@ u_ll make_ull_from_n_bytes(const byte *data, const int n) {
 }
 
 
+byte touch_all_pages(byte *mem, size_t memsz) {
+  // Warm up a memory mapped file.
+  byte xor = 0;
+  size_t o = 0;
+  long long counter = 0;
+  int verbose = 0;
+
+  while (o < memsz) {
+    xor ^= mem[o];
+    o += PAGESIZE;
+    counter++;
+  }
+  if (verbose) printf("        %lld touches.\n", counter);
+  return xor;
+}
+
+
 

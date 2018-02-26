@@ -33,17 +33,19 @@ while (<J>) {
 
 close(J);
 
+calculate_max_dcg_scores_at_this_depth();
 
 # Now read the results (In either TREC submission format or Bhaskar's format)
 
 die "Can't open $rsltsfile\n"
     unless open R, $rsltsfile;
 $current_qid = -1;
-$ave_dcg = 0;
+$ave_ndcg = 0;
+$ave_p = 0;
 
 print 
-"Query  #Rel_found  DCG   #Unjudged
-=====  ==========  ====  =========\n";
+"Query   P\@$depth    NDCG\@$depth   #Unjudged
+=====   ======  ======    =========\n";
 
 while (<R>) {
     chomp;
@@ -73,20 +75,21 @@ It's field count was $fields\n";
     if ($qid != $current_qid) {
 	if ($current_qid >= 0) {
 	    # Report results for old query
-	    print "$qid\t$relfound\t", sprintf("%6.4f", $cdg), "\t$unjudged\n";
+	    print "$current_qid\t", sprintf("%6.4f\t",$relfound/$depth), sprintf("%6.4f", $cdg / $max_dcg{$qid}), "\t  $unjudged\n";
 	    if ($relfound > 0) {
 		$successes++;
 	    } else {
 		$failures++;
 	    }
+	    $ave_ndcg += $cdg / $max_dcg{$qid};
+	    $ave_p += ($relfound / $depth);
 	}
-	$ave_dcg += $cdg;
 	$cdg = 0.0;
 	$relfound = 0;
 	$unjudged = 0;
 	$current_qid = $qid;
     }
-    
+#    print "Calling lookup_gain($qid, $did)\n";
     $gain = lookup_gain($qid, $did);
     if ($gain < 0) {
 	$unjudged++;
@@ -97,26 +100,28 @@ It's field count was $fields\n";
     $relfound++ if ($gain > 0);    
 }
 
-if ($qid != $current_qid) {
-    if ($current_qid >= 0) {
-	# Report results for old query
-	print "$qid\t$relfound\t", sprintf("%6.4f", $cdg), "\t$unjudged\n";
-	if ($relfound > 0) {
-	    $successes++;
-	} else {
-	    $failures++;
-	}
+if ($current_qid >= 0) {
+    # Report results for old query
+    print "$current_qid\t", sprintf("%6.4f\t",$relfound/$depth), sprintf("%6.4f", $cdg / $max_dcg{$qid}), "\t  $unjudged\n";
+    if ($relfound > 0) {
+	$successes++;
+    } else {
+	$failures++;
     }
+    $ave_ndcg += $cdg / $max_dcg{$qid};
+    $ave_p += ($relfound / $depth);
 }
 
-$ave_dcg /= ($successes + $failures);
+$ave_ndcg /= ($successes + $failures);
+$ave_p /= ($successes + $failures);
 
 print "
 
 Successes: $successes
 Failures: $failures
 
-Average DCG: $ave_dcg
+Average NDCG@$depth: ", sprintf("%6.4f", $ave_ndcg), "
+Average P@$depth: $ave_p;
     ";
 
 exit(0);
@@ -137,10 +142,52 @@ sub lookup_gain {
 	unless defined($hj{$qid});
 
     my @rels = split /;/, $hj{$qid};
+
+#    if ($qid eq "2") {
+#	foreach $rel (@rels) {
+#	    print "Top2  $rel\n";
+#	}
+#    }
+    
     foreach $rel (@rels) {
 	if ($rel =~ /([0-9]+)\t([0-9]+)/) {
-	    return $2 if $1 eq $did;
+	    if ($1 eq $did) {
+#		if ($qid eq "2") {
+#		    print "Topic $qid:  returning $2 for $1\n";
+#		}
+		return $2;
+	    }
 	}
     }
     return -1;   # Signal unjudged.
+}
+
+
+sub calculate_max_dcg_scores_at_this_depth {
+    my $max = 0;
+    foreach my $qid (keys %hj) {
+	my $dcg = 0;
+	my @histo;
+	my @rels = split /;/, $hj{$qid};
+	foreach $rel (@rels) {
+	    if ($rel =~ /([0-9]+)\t([0-9]+)/) {
+		next if $2 < 1;
+		$histo[$2]++;
+		$max = $2 if $2 > $max;
+	    }
+	}
+
+	# We now have a histogram of all the positive scores.
+	my $rank = 1;
+	for (my $i = $max; $i > 0; $i--) {
+	    # $i is the index into the histogram, i.e the gain
+	    for (my $j = 0; $j < $i; $j++) {
+		my $dg = $i /log2($rank + 1);
+		$dcg += $dg;
+		$rank++;
+	    }
+	}
+	$max_dcg{$qid} = $dcg;
+	#print "Maximum DCG for topic $qid = $max_dcg{$qid}\n";
+    }
 }

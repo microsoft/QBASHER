@@ -19,6 +19,8 @@
 
 params_t params;
 
+static u_ll total_postings_processed = 0;
+
 static void print_usage(char *progname, arg_t *args) {
   printf("\n\nUsage: %s You must specify an indexStem.", progname);
   print_args(stdout, TEXT, args);
@@ -159,45 +161,51 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
     
     t = term_lookup(query_array[q], vocab_in_mem, vocab_size / BYTES_IN_VOCAB_ENTRY);
     if (t < 0) {
-      printf("Error: Lookup failed for term %d\n", query_array[q]);
-      exit(1);
-    }
-    
-    vocab_entry = vocab_in_mem + t * BYTES_IN_VOCAB_ENTRY;
-    tmp = make_ull_from_n_bytes(vocab_entry + BYTES_FOR_TERMID, BYTES_FOR_POSTINGS_COUNT);
-    term_control_block[q].postings_remaining = (int)tmp;
-    if (params.debug > 0) fprintf(stderr, "  setting up for term %d (termid %d, postings remaining %llu): \n",
-				  q, t, tmp);
-    if (tmp > 0) {
-      if_offset = make_ull_from_n_bytes(vocab_entry + BYTES_FOR_TERMID + BYTES_FOR_POSTINGS_COUNT,
-					BYTES_FOR_INDEX_OFFSET);
-      term_control_block[q].if_pointer = if_in_mem + if_offset;
-      // Read the qscore from the run header
-      term_control_block[q].highest_unprocessed_score =
-	(int) make_ull_from_n_bytes(term_control_block[q].if_pointer, BYTES_FOR_QSCORE);
-      term_control_block[q].if_pointer += BYTES_FOR_QSCORE;
-      // Read the run length from the run header
-      term_control_block[q].current_run_len =
-	(int) make_ull_from_n_bytes(term_control_block[q].if_pointer, BYTES_FOR_RUN_LEN);
-      term_control_block[q].if_pointer += BYTES_FOR_RUN_LEN;
-      if (params.debug > 0) fprintf(stderr,
-				    "     postings remaining: %d\n"
-				    "     index offset: %llu\n"
-				    "     highest qscore: %d\n"
-				    "     length of run: %d\n",
-				    term_control_block[q].postings_remaining,
-				    if_offset,
-				    term_control_block[q].highest_unprocessed_score,
-				    term_control_block[q].current_run_len);
+      fprintf(stderr, "Warning: Lookup failed for term %d in query %d\n",
+	     query_array[q], queryid);
+      term_control_block[q].postings_remaining = 0;
+      if_offset = 0;
+      term_control_block[q].highest_unprocessed_score = 0;
+      term_control_block[q].current_run_len = 0;
+      terms_still_going--;
+    } else {    
+      vocab_entry = vocab_in_mem + t * BYTES_IN_VOCAB_ENTRY;
+      tmp = make_ull_from_n_bytes(vocab_entry + BYTES_FOR_TERMID, BYTES_FOR_POSTINGS_COUNT);
+      term_control_block[q].postings_remaining = (int)tmp;
+      if (params.debug > 0)
+	fprintf(stderr, "  setting up for term %d in query %d (termid %d, postings remaining %llu):\n",
+		q, queryid, t, tmp);
+      if (tmp > 0) {
+	if_offset = make_ull_from_n_bytes(vocab_entry + BYTES_FOR_TERMID + BYTES_FOR_POSTINGS_COUNT,
+					  BYTES_FOR_INDEX_OFFSET);
+	term_control_block[q].if_pointer = if_in_mem + if_offset;
+	// Read the qscore from the run header
+	term_control_block[q].highest_unprocessed_score =
+	  (int) make_ull_from_n_bytes(term_control_block[q].if_pointer, BYTES_FOR_QSCORE);
+	term_control_block[q].if_pointer += BYTES_FOR_QSCORE;
+	// Read the run length from the run header
+	term_control_block[q].current_run_len =
+	  (int) make_ull_from_n_bytes(term_control_block[q].if_pointer, BYTES_FOR_RUN_LEN);
+	term_control_block[q].if_pointer += BYTES_FOR_RUN_LEN;
 
-    } else {
-      fprintf(stderr, "Error: the number of postings for term %d is zero. That can't be!\n", 
-	      t);
-      exit(1);
+      } else {
+	fprintf(stderr, "Error: the number of postings for term %d in query %d is zero. That can't be!\n", 
+		queryid, t);
+	exit(1);
+      }
     }
+    if (params.debug > 0) fprintf(stderr,
+				  "     postings remaining: %d\n"
+				  "     index offset: %llu\n"
+				  "     highest qscore: %d\n"
+				  "     length of run: %d\n",
+				  term_control_block[q].postings_remaining,
+				  if_offset,
+				  term_control_block[q].highest_unprocessed_score,
+				  term_control_block[q].current_run_len);
   }
   
-  if (params.debug) fprintf(stderr, "Q: Control blocks set up.\n");
+  if (params.debug) fprintf(stderr, "Q: Control blocks set up for query %d.\n", queryid);
 
   // ---------- Now process the query in SAAT fashion -----------
   while (terms_still_going > 0) {
@@ -213,7 +221,8 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
     }
 
     if (chosen == -1) {
-      fprintf(stderr, "Error: Unable to find a best.  Huh???\n");
+      fprintf(stderr, "Error: Unable to find a best for query %d.  Huh???\n",
+	      queryid);
       exit(1);
     }
 
@@ -235,7 +244,9 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
       postings_processed += term_control_block[chosen].current_run_len;
      
       if (params.postingsCountCutoff > 0 && postings_processed > params.postingsCountCutoff) {
-	if (params.debug) fprintf(stderr, "Early termination due to postings count: > %d\n", params.postingsCountCutoff); 
+	if (params.debug)
+	  fprintf(stderr, "Early termination of query %d due to postings count: > %d\n",
+		  queryid, params.postingsCountCutoff); 
 	break;  // Early termination --------------------------------------------->
       }
 
@@ -254,11 +265,15 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
 	if (params.debug) fprintf(stderr, "Terms still going: %d\n", terms_still_going);		      
       }
     } else {
-      if (params.debug) fprintf(stderr, "Early termination due to low score cutoff: < %d\n", params.lowScoreCutoff); 
+      if (params.debug)
+	fprintf(stderr, "Early termination of query %d due to low score cutoff: < %d\n",
+		queryid, params.lowScoreCutoff); 
       break;  // Early termination: Reached low score cutoff ------->
     }
 
   }
+
+  total_postings_processed += postings_processed;
 
   // ------ now produce the ranking ---------
   if (params.debug) fprintf(stderr, "Q: Producing a ranking.\n");
@@ -288,7 +303,7 @@ int main(int argc, char **argv) {
   CROSS_PLATFORM_FILE_HANDLE vocabh, ifh;
   HANDLE vocabmh, ifmh;
   int a, error_code, t, query_array[MAX_QTERMS], q_count = 0, stemlen, queryid, termid;
-  double start_time = what_time_is_it();
+  double start_time;
     
 
   setvbuf(stderr, NULL, _IONBF, 0);
@@ -306,6 +321,12 @@ int main(int argc, char **argv) {
     print_usage(argv[0], (arg_t *)(&args));
   }
 
+  if (params.k < 1) {
+    fprintf(stderr, "Warning:  value of k must be at least 1.  Adjusting %d to be 1 instead.\n",
+	   params.k);
+    params.k = 1;
+  }
+
   fprintf(stderr, "Q: Opening the query input steam, assigning buffers etc.\n");
   
   fgets_buf = (char *)cmalloc(MAX_FGETS, (u_char *)"buffer for fgets()", FALSE);
@@ -316,8 +337,10 @@ int main(int argc, char **argv) {
   if (params.debug) fprintf(stderr, "Q: Memory map the .vocab and .if files\n");
   strcpy(fname_buf + stemlen, ".vocab");
   vocab_in_mem = mmap_all_of((byte *)fname_buf, &vocab_size, FALSE, &vocabh, &vocabmh, &error_code);
+  touch_all_pages(vocab_in_mem, vocab_size);   // warmup
   strcpy(fname_buf + stemlen, ".if");
   if_in_mem = mmap_all_of((byte *)fname_buf, &if_size, FALSE, &ifh, &ifmh, &error_code);
+  touch_all_pages(if_in_mem, if_size);   // warmup
 
   accumulators = cmalloc(params.numDocs * sizeof(int), (u_char *)"accumulators", FALSE);
   
@@ -329,7 +352,7 @@ int main(int argc, char **argv) {
   if (params.debug) fprintf(stderr, "Q: About to start reading queries from stdin ...\n"
 			    "Queries consist of a numeric query-id, a tab, then a list of\n"
 			    "space separated (integer) termids.\n");
-  
+  start_time = what_time_is_it();
   while (fgets(fgets_buf, MAX_FGETS, stdin) != NULL) {
     if (params.debug) fprintf(stderr, "\n\nQ: Read and process a line.\n%s\n", fgets_buf);
     q_count++;
@@ -348,8 +371,8 @@ int main(int argc, char **argv) {
       termid = strtol(p, &q, 10);
       if (p == q) break;  // no integer found
       if (t >= MAX_QTERMS) {
-	printf("Warning: Query too long.  Only first %d terms considered.\n",
-	       MAX_QTERMS);
+	fprintf(stderr, "Warning: Query %d too long.  Only first %d terms considered.\n",
+		queryid, MAX_QTERMS);
 	break;
       }
       query_array[t] = termid;
@@ -369,8 +392,9 @@ int main(int argc, char **argv) {
   free(accumulators);
   free(fake_heap);
 
-  fprintf(stderr, "Q: %d queries processed in %.3f sec.\n",
-	  q_count, what_time_is_it() - start_time);
+  fprintf(stderr, "Q: %d queries processed in %.3f sec. since warmup.\n"
+	  "Q: Total postings processed: %llu\n",
+	  q_count, what_time_is_it() - start_time, total_postings_processed);
   
 
 }
