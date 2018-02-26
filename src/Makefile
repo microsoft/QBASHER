@@ -71,7 +71,7 @@ cleanest: cleaner
 git:
 	git add `find . -iname \*.c`
 	git add `find . -iname \*.h`
-	git add `find . -iname \*.cs`
+	git add */*.cs    # Can't use a find because VS 2015 creates temporary .cs files down in the tree
 	git add `find . -iname \*.csproj`
 	git add `find . -iname App.config`
 	git add `find . -iname \*.sln`
