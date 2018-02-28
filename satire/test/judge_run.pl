@@ -11,16 +11,30 @@ $rsltsfile = $ARGV[1];
 $depth = 1000;   # Maximum rank used in calculating NDCG score.
 $depth = $ARGV[2] if ($#ARGV >= 2);
 
+$test_qid = 9999999;   # Set to problem query id, for extra debug output
+
 print "Reading judgments from $jfile and results from $rsltsfile ....\n\n";
 
 die "Can't load judgments file $jfile"
     unless open J, $jfile;
 
+%gain_mapping = (
+    0 => 0,
+    1 => 3,
+    2 => 7,
+    3 => 15,
+    4 => 31);
+
 while (<J>) {
     chomp;
-    if (/^([0-9]+)\t(.*[0-9])/) {
+    if (/^([0-9]+)\s+([0-9]+)\s+([0-9])/) {
 	$qnum = $1;
-	$judgment = $2;
+	$docid = $2;
+	$rating = $3;
+	$gain = $gain_mapping{$rating};   # Increasing the differentiation between labels
+	$gain = $rating;
+	$judgment = "$docid\t$gain";
+	#print "RAT: $judgment.  WAS $rating\n";
 	if (defined($hj{$qnum})) {
 	    $hj{$qnum} .= ";$judgment";
 	} else {
@@ -75,13 +89,15 @@ It's field count was $fields\n";
     if ($qid != $current_qid) {
 	if ($current_qid >= 0) {
 	    # Report results for old query
-	    print "$current_qid\t", sprintf("%6.4f\t",$relfound/$depth), sprintf("%6.4f", $cdg / $max_dcg{$qid}), "\t  $unjudged\n";
+	    print "$current_qid\t", sprintf("%6.4f\t",$relfound/$depth), sprintf("%6.4f", $cdg / $max_dcg{$current_qid}), "\t  $unjudged\n";
+	    print "CDG $cdg, MAX_DCG $max_dcg{$current_qid}\n"
+		if $current_qid == $test_qid;
 	    if ($relfound > 0) {
 		$successes++;
 	    } else {
 		$failures++;
 	    }
-	    $ave_ndcg += $cdg / $max_dcg{$qid};
+	    $ave_ndcg += $cdg / $max_dcg{$current_qid};
 	    $ave_p += ($relfound / $depth);
 	}
 	$cdg = 0.0;
@@ -95,20 +111,23 @@ It's field count was $fields\n";
 	$unjudged++;
 	$gain = 0;
     }
-    $dg = $gain /log2($rank + 1);
+    $discount = log2($rank + 1);
+    $dg = $gain / $discount;
     $cdg += $dg;
+    print "RANK $rank, GAIN $gain, DISCOUNT $discount --> DG = $dg  [CDG $cdg]\n"
+	if $gain > 0 && $current_qid == $test_qid;
     $relfound++ if ($gain > 0);    
 }
 
 if ($current_qid >= 0) {
     # Report results for old query
-    print "$current_qid\t", sprintf("%6.4f\t",$relfound/$depth), sprintf("%6.4f", $cdg / $max_dcg{$qid}), "\t  $unjudged\n";
+    print "$current_qid\t", sprintf("%6.4f\t",$relfound/$depth), sprintf("%6.4f", $cdg / $max_dcg{$current_qid}), "\t  $unjudged\n";
     if ($relfound > 0) {
 	$successes++;
     } else {
 	$failures++;
     }
-    $ave_ndcg += $cdg / $max_dcg{$qid};
+    $ave_ndcg += $cdg / $max_dcg{$current_qid};
     $ave_p += ($relfound / $depth);
 }
 
@@ -164,11 +183,13 @@ sub lookup_gain {
 
 
 sub calculate_max_dcg_scores_at_this_depth {
-    my $max = 0;
+
+    my @histo;
     foreach my $qid (keys %hj) {
+	undef @histo;
 	my $dcg = 0;
-	my @histo;
 	my @rels = split /;/, $hj{$qid};
+	my $max = 0;
 	foreach $rel (@rels) {
 	    if ($rel =~ /([0-9]+)\t([0-9]+)/) {
 		next if $2 < 1;
@@ -181,13 +202,20 @@ sub calculate_max_dcg_scores_at_this_depth {
 	my $rank = 1;
 	for (my $i = $max; $i > 0; $i--) {
 	    # $i is the index into the histogram, i.e the gain
-	    for (my $j = 0; $j < $i; $j++) {
+	    next unless defined($histo[$i]);
+	    print "HISTO[$i] = $histo[$i]\n"
+		if $qid == $test_qid;
+	    for (my $j = 0; $j < $histo[$i]; $j++) {
+		last if $rank > $depth;
 		my $dg = $i /log2($rank + 1);
 		$dcg += $dg;
+		print " ++ RANK $rank, GAIN $i, DG $dg, DCG $dcg\n"
+		    if $qid == $test_qid;
 		$rank++;
 	    }
 	}
 	$max_dcg{$qid} = $dcg;
-	#print "Maximum DCG for topic $qid = $max_dcg{$qid}\n";
+	print "Maximum DCG for topic $qid = $max_dcg{$qid}\n" 
+	    if $qid == $test_qid;
     }
 }
