@@ -2081,3 +2081,15 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        C# front-end, because those filenames shouldn't be passed in
        via SharedFileStore.ini
        
+*** v1.5.136-OS developer1 01 Mar 2018 ***  Better implementation of
+       timeouts and query shortening.
+    1. Tweaking operation costs
+    2. Arranging to count all the partial matches considered in the
+       SAAT loop
+    3. Overhauling the output of -x_show_qtimes, e.g. to show msec as well
+    4. Modifying the "remove high frequency terms" heuristic in
+       query_shortening to avoid removal of terms whose occurrence
+       frequency is less than 10% of the number of records in the
+       index, except if the query is at least two words longer than
+       the threshold.
+       

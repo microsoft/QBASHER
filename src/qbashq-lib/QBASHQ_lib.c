@@ -283,14 +283,16 @@ static void setup_for_op_counting(book_keeping_for_one_query_t *qex) {
   qex->op_count[COUNT_DECO].cost = 1;
   strcpy(qex->op_count[COUNT_SKIP].label, "postings_skips");
   qex->op_count[COUNT_SKIP].cost = 1;
-  strcpy(qex->op_count[COUNT_CAND].label, "candidates_considered");
-  qex->op_count[COUNT_CAND].cost = 1;
+  strcpy(qex->op_count[COUNT_ACAN].label, "prima_facie_candidates");
+  qex->op_count[COUNT_ACAN].cost = 1;
+  strcpy(qex->op_count[COUNT_CONS].label, "candidates_considered");
+  qex->op_count[COUNT_CONS].cost = 1;
   strcpy(qex->op_count[COUNT_SCOR].label, "scores_calculated_from_text");
-  qex->op_count[COUNT_SCOR].cost = 10;
+  qex->op_count[COUNT_SCOR].cost = 1000;  // COUNT_SCOR also includes classifier calls
   strcpy(qex->op_count[COUNT_PART].label, "partial_checks");
-  qex->op_count[COUNT_PART].cost = 10;
+  qex->op_count[COUNT_PART].cost = 100;
   strcpy(qex->op_count[COUNT_ROLY].label, "rank_only_checks");
-  qex->op_count[COUNT_ROLY].cost = 10;
+  qex->op_count[COUNT_ROLY].cost = 100;
   strcpy(qex->op_count[COUNT_TLKP].label, "term_lookup");
   qex->op_count[COUNT_TLKP].cost = 1;
   strcpy(qex->op_count[COUNT_BLOM].label, "Check_Bloom_filter");
@@ -306,7 +308,7 @@ static void zero_op_counts(book_keeping_for_one_query_t *qex) {
 }
 
 
-int op_cost(book_keeping_for_one_query_t *qex) {
+int kop_cost(book_keeping_for_one_query_t *qex) {
   // Return is cost of ops performed so far divided by 1000 with rounding
   int c, rslt = 0;
   for (c = 0; c < NUM_OPS; c++) {
@@ -327,14 +329,15 @@ static void display_op_counts(query_processing_environment_t *qoenv, book_keepin
     total_cost += qex->op_count[c].count * qex->op_count[c].cost;
   }
   fprintf(qoenv->query_output, "Total cost = %lld\n", total_cost);
+  fprintf(qoenv->query_output, "Elapsed time = %.2f msec.\n",
+	  1000.0 * (what_time_is_it() - qex->start_time));
   fprintf(qoenv->query_output, "-------------------------------------------------------------------------\n");
 }
 
 
-static void display_shard_stats(query_processing_environment_t *qoenv, book_keeping_for_one_query_t *qex, int timeout_kops,
+static void display_cost_stats(query_processing_environment_t *qoenv, book_keeping_for_one_query_t *qex, int timeout_kops,
 				int tl_returned, u_char **tl_suggestions) {
   // Display op count and timeout info.  In format similar to that requested by Developer2
-  // Shard<tab>1<tab>time<tab>25.2<tab>numberOfCandidatesVetted<tab>100<tab>numberOfCandidatesReturned<tab>8<tab>etc
   int c, total_cost = 0;
   u_char timed_out;
   // Calculate the total operation costs
@@ -344,9 +347,10 @@ static void display_shard_stats(query_processing_environment_t *qoenv, book_keep
 
   timed_out = 'N';
   if (timeout_kops > 0 && total_cost > 1000 * timeout_kops) { timed_out = 'Y'; }
-  fprintf(qoenv->query_output, "\tShard\t0\ttimedOut\t%c\tCost\t%d\tpostingsExamined\t%d\tcandidatesVetted\t%d\tsuggestionsReturned\t%d\n",
+  fprintf(qoenv->query_output, "QTIMES:  timedOut= %c Cost=%10d  postingsExamined= %10d primaFacieCandidates= %10d candidatesScored= %5d  suggestionsReturned= %3d Elapsed_msec= %8.3f\n",
 	  timed_out, total_cost, qex->op_count[COUNT_DECO].count,
-	  qex->op_count[COUNT_PART].count, tl_returned);
+	  qex->op_count[COUNT_ACAN].count, qex->op_count[COUNT_SCOR].count, tl_returned,
+	  1000.0 * (what_time_is_it() - qex->start_time));
 }
 
 static int isduplicate(char *s1, char *s2, int debug)  {
@@ -1622,7 +1626,7 @@ int possibly_record_candidate(query_processing_environment_t *qoenv,
   if (0) printf("candid8_length = %d\n", candid8_length);
   d_signature = (*dtent >> DTE_DOCBLOOM_SHIFT); // No need for masking cos Bloom is Most Sig, and zeroes are shifted in from left.
 
-  qex->op_count[COUNT_CAND].count++;
+  qex->op_count[COUNT_CONS].count++;
 
   if (qoenv->relaxation_level == 0) {
     // Some rejection tests don't make sense when we're relaxing.
@@ -2483,8 +2487,9 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
     // remove and record the street number
     qex->street_number = process_street_address(q, TRUE);  // Do it in-place - query can't grow.
     if (qoenv->display_parsed_query)
-      printf("Query after street address processing is {%s}; Original query was {%s}\n",
-	     q, qex->query);
+      fprintf(qoenv->query_output,
+	      "Query after street address processing is {%s}; Original query was {%s}\n",
+	      q, qex->query);
   }
 
 
@@ -2525,7 +2530,9 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
       // but I guess you don't keep that around?!
       // (Instead the parsed query is placed directly into a structured query.)
       // Also this version isn't useful unless only a single thread is run in parallel (-query_streams=1)
-      printf("Query after application of classifier rules is {%s}; Original query was {%s}\n", q, qex->query);
+      fprintf(qoenv->query_output,
+	     "Query after application of classifier rules is {%s}; Original query was {%s}\n",
+	     q, qex->query);
     }
   }
 
@@ -2536,15 +2543,18 @@ static int process_query_text(query_processing_environment_t *qoenv, book_keepin
        apply_substitutions_rules_to_string(qoenv->substitutions_hash, qoenv->language,
 					   q, TRUE, FALSE, qoenv->debug);
        if (qoenv->display_parsed_query)
-	 printf("Query after application of %s substitutions is {%s}; Original query was {%s}\n",
-		qoenv->language, q, qex->query);
+	 fprintf(qoenv->query_output,
+		 "Query after application of %s substitutions is {%s}; Original query was {%s}\n",
+		 qoenv->language, q, qex->query);
   }
 
   normalize_delimiters(q,  // query string
 		       (qoenv->classifier_mode || (!qoenv->auto_partials && !qoenv->auto_line_prefix)),
 		       ascii_non_tokens, qoenv->debug);
-  if (qoenv->display_parsed_query) printf("Query after normalize_delimiters is {%s}; Original query was {%s}.\n",
-					  q, qex->query);
+  if (qoenv->display_parsed_query)
+    fprintf(qoenv->query_output,
+	    "Query after normalize_delimiters is {%s}; Original query was {%s}.\n",
+	    q, qex->query);
 
 
   strncpy((char *)qex->query_as_processed, (char *)q, MAX_QLINE);
@@ -2722,8 +2732,9 @@ static int process_query(query_processing_environment_t *qoenv, book_keeping_for
     if ((qex->shortening_codes & SHORTEN_ALL_DIGITS)) shortening_code[pos++] = '9';
     if ((qex->shortening_codes & SHORTEN_HIGH_FREQ)) shortening_code[pos++] = 'H';
 
-    printf("Query used for candidate generation is {%s}; Original query was {%s}. Shortening code: {%s}\n",
-	   qex->candidate_generation_query, qex->query, shortening_code);
+    fprintf(qoenv->query_output,
+	    "Query used for candidate generation is {%s}; Original query was {%s}. Shortening code: {%s}\n",
+	    qex->candidate_generation_query, qex->query, shortening_code);
   }
   
 
@@ -3314,7 +3325,7 @@ static book_keeping_for_one_query_t *load_book_keeping_for_one_query(query_proce
   qex->query_contains_operators = FALSE;
   qex->full_match_count = 0;
   qex->street_number = -1;
-  if (qoenv->timeout_msec > 0) qex->start_time = what_time_is_it();
+  qex->start_time = what_time_is_it();
 
   memset(qex->candidates_recorded, 0, (MAX_RELAX + 1) * sizeof(int));
   
@@ -3579,8 +3590,9 @@ static int handle_one_query(index_environment_t *ixenv, query_processing_environ
     if (0) printf("  --- orig q words %d, max_wdlen_in_bytes %d\n",
 		  original_query_words, max_word_length_in_bytes);
     if (local_qenv->display_parsed_query)
-      printf("Query after stripping punctuation and controls is {%s}\n",
-	     qex->query);
+      fprintf(qoenv->query_output,
+	      "Query after stripping punctuation and controls is {%s}\n",
+	      qex->query);
     if (l <= 0) return(0);  // -----------------------------------------------> Empty Query
     if (local_qenv->classifier_min_words > 0
 	&& original_query_words < local_qenv->classifier_min_words) return(0);  //-----------> Query too short
@@ -3964,8 +3976,8 @@ int handle_multi_query(index_environment_t *ixenv, query_processing_environment_
   // 8. Clean up.
 
   if (qoenv->x_show_qtimes ||  explain) {
-    display_op_counts(qoenv, qex);  // Note: the op_counts are zeroed in handle_one_query()
-    display_shard_stats(qoenv, qex, qoenv->timeout_kops, qex->tl_returned, qex->tl_suggestions);
+    if (qoenv->x_show_qtimes > 1) display_op_counts(qoenv, qex);  // Note: the op_counts are zeroed in handle_one_query()
+    display_cost_stats(qoenv, qex, qoenv->timeout_kops, qex->tl_returned, qex->tl_suggestions);
   }
   
   if (!qoenv->report_match_counts_only) {

@@ -295,6 +295,7 @@ void saat_relaxed_and(FILE *out, query_processing_environment_t *qoenv, book_kee
     }
 
     candidates_considered++;
+    qex->op_count[COUNT_ACAN].count += qex->tl_saat_blocks_used;
     // For a single term query, the conditional inside this loop will never be executed
     terms_missing = 0;  // How many terms are not matched by this candidate.
     terms_exhausted = 0;
@@ -311,8 +312,8 @@ void saat_relaxed_and(FILE *out, query_processing_environment_t *qoenv, book_kee
 	if (pl_blox[l].curdoc > candidoc) code = 1;
 	else if (pl_blox[l].curdoc == candidoc) code = 0;
 	else {
-	  code = saat_skipto(out, pl_blox + l, l, pl_blox[candid8].curdoc, DONT_CARE, index, qex->op_count, 
-			     qoenv->debug, error_code);
+	  code = saat_skipto(out, pl_blox + l, l, pl_blox[candid8].curdoc, DONT_CARE, index,
+			     qex->op_count, qoenv->debug, error_code);
 	  if (*error_code < -200000) {
 	    if (qoenv->debug >= 1) fprintf(out, "Exit due to error in saat_skipto\n");
 	    return;  // ------------------------------------->
@@ -665,8 +666,9 @@ void saat_relaxed_and(FILE *out, query_processing_environment_t *qoenv, book_kee
     // If in force, check both deterministic and elapsed time timeouts every tenth possible.
     if ((qoenv->timeout_kops > 0 || qoenv->timeout_msec > 0) && (possibles % 10) == 0) {
       if (qoenv->timeout_kops > 0) {
-	if (qoenv->debug >= 1) fprintf(out, "Checking timeout %d v %d\n", op_cost(qex), qoenv->timeout_kops);
-	if (op_cost(qex) > qoenv->timeout_kops) {
+	if (qoenv->debug >= 1) fprintf(out, "Checking timeout %d v %d\n",
+				       kop_cost(qex), qoenv->timeout_kops);
+	if (kop_cost(qex) > qoenv->timeout_kops) {
 	  qex->timed_out = TRUE;
 	  qoenv->query_timeout_count++;
 	  if (qoenv->debug >= 1) {

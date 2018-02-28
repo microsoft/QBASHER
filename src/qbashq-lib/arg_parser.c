@@ -95,7 +95,7 @@ arg_t args[] = {
   /* 41 */{ "classifier_stop_thresh2", AFLOAT, FALSE, 0, 1, "Terminate early if the lowest-ranked of max_to_show candidates exceeds this value. (classifier_mode > 0)." },
   /* 42 */{ "display_parsed_query", ABOOL, TRUE, 0, 0, "If TRUE, QBASHQ will display the parsed (and possibly re-written query, according to other parameters) query." },
   /* 43 */{ "debug", AINT, FALSE, 0, 10, "Activate debugging output.  0 - none, 1 - low, 4 - highest; 3 - runs tests; 10 - no debugging but unbuffer stdout" },
-  /* 44 */ { "x_show_qtimes", ABOOL, TRUE, 0, 10, "Set query_streams to one and print a QTIMES: line for each query processed, giving elapsed msec.  (experimental)" },
+  /* 44 */ { "x_show_qtimes", AINT, TRUE, 0, 10, "Set query_streams to one and print a QTIMES: line for each query showing costs and times. If > 1, show additional detail." },
   /* 45 */{ "object_store_files", ASTRING, TRUE, 0, 0, "A comma separated list of four index files + config." },
   /* 46 */{ "language", ASTRING, FALSE, 0, 0, "Any language specific processing will be done in this language, if supported.  Two-char language code. E.g. EN, de, FR, zh" },
   /* 47 */{ "use_substitutions", ABOOL, FALSE, 0, 0, "If TRUE, and there is a QBASH.substitution_rules file, substitutions for the current language will be applied to queries." },
@@ -238,7 +238,7 @@ void set_qoenv_defaults(query_processing_environment_t *qoenv) {
   qoenv->classifier_stop_thresh2 = 1.0;
   qoenv->display_parsed_query = FALSE;
   qoenv->debug = 0;
-  qoenv->x_show_qtimes = FALSE;
+  qoenv->x_show_qtimes = 0;
   qoenv->object_store_files = NULL;
   qoenv->language = make_a_copy_of((u_char *)"en");
   qoenv->use_substitutions = FALSE;

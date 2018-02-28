@@ -80,12 +80,13 @@ LPCWSTR convert_str_to_wide(u_char *str);
 #endif
 
 
-#define NUM_OPS 8  // Must match code in setup_for_op_counting()
+#define NUM_OPS 9  // Must match code in setup_for_op_counting()
 
 enum {
   COUNT_DECO,   // Decompress a posting
   COUNT_SKIP,   // Skip within a postings list
-  COUNT_CAND,   // Consider a candidate
+  COUNT_ACAN,   // All candidates. i.e each target in the SAAT loop
+  COUNT_CONS,   // Consider a candidate which matches the required number of terms
   COUNT_SCOR,   // Score or classify a candidate
   COUNT_PART,   // Check a partial word term
   COUNT_ROLY,   // Check a rank-only term
@@ -144,7 +145,7 @@ typedef struct {
 typedef struct {
   // ---- Settable options.
   void **vptra;  // Array of pointers to the value variables.  Set up in setup_valueptr_array()
-  BOOL auto_partials, auto_line_prefix, warm_indexes, display_parsed_query, x_show_qtimes,
+  BOOL auto_partials, auto_line_prefix, warm_indexes, display_parsed_query,
     x_batch_testing, chatty;
   u_char *partial_query, *index_dir, *fname_forward, *fname_if, *fname_doctable, *fname_vocab,
     *fname_query_batch, *fname_output, *fname_config, *fname_substitution_rules,
@@ -154,7 +155,7 @@ typedef struct {
     timeout_kops, timeout_msec, displaycol, extracol, query_streams, duplicate_handling,
     classifier_mode, classifier_min_words, classifier_max_words, classifier_longest_wdlen_min,
     x_max_span_length, query_shortening_threshold, street_address_processing, street_specs_col,
-    debug;
+    debug, x_show_qtimes;
   double segment_intent_multiplier;
   double classifier_stop_thresh1, classifier_stop_thresh2;
   double location_lat, location_long, geo_filter_radius;
@@ -313,6 +314,6 @@ typedef struct {
 } book_keeping_for_one_query_t;
 
 
-int op_cost(book_keeping_for_one_query_t *qex);
+int kop_cost(book_keeping_for_one_query_t *qex);
 
 

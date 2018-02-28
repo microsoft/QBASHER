@@ -46,7 +46,7 @@ $err_cnt = 0;
 print "\nRanking: Checking result counts ...\n";
 $err_cnt += check_count("Protocol amending the Agreements, Conventions and Protocols on Narcotic Drugs, 1946", "", 1, 0);
 $err_cnt += check_count("Protocol amending the Agreements, Conventions and Protocols on Narcotic Drugs, 1946", "-query_shortening_threshold=5", 2, 0);
-$err_cnt += check_count("Protocol amending the Agreements, Conventions and Protocols on Narcotic Drugs, 1946", "-query_shortening_threshold=2", 4, 0);
+$err_cnt += check_count("Protocol amending the Agreements, Conventions and Protocols on Narcotic Drugs, 1946", "-query_shortening_threshold=2", 2, 0);
 $err_cnt += check_count("water xxnoexistxxx", "", 0, 0);
 $err_cnt += check_count("water xxnoexistxxx", "-query_shortening_threshold=1", 8, 0);
 $err_cnt += check_count("Dance Dance Revolution EXTREME (North America) song litzs", "", 0, 0);

@@ -51,14 +51,15 @@ static int cmp_freak(const void *ip, const void *jp, void *context) {
 
 void create_candidate_generation_query(query_processing_environment_t *qoenv,
 					      book_keeping_for_one_query_t *qex) {
-  // If query shortening is in force, just make cg_qterms a copy of qterms.
+  // If query shortening is not in force, just make cg_qterms a copy of qterms.
   // Otherwise, apply a series of heuristics to try to reduce the length of
   // the query to the desired level.  Don't go shorter than the desired level,
   // and leave compound terms alone:
   //    1. Remove non-existent words
   //    2. *** NO LONGER DONE, BECAUSE IT'S NOW FASTER TO LEAVE THEM IN.  Remove repeated words
   //    3. Remove words which are all digits
-  //    4. Remove the words with the highest occurrence frequency
+  //    4. Remove the words with the highest occurrence frequency (subject to a
+  //       minimum frequency.)
   // 
   int t, u, distinct_terms = 0;
   byte *vocab_entry;
@@ -93,7 +94,7 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
   } else {
     BOOL *zap;
     byte ig1;
-    int newt, u, v, *freaki;
+    int newt, u, v, *freaki, freq_thresh = 0;
     u_char *wd;
     u_ll occurrence_count, ig2, *freaks;
 ;
@@ -158,11 +159,21 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
 #else      
       qsort_r(freaki, qex->qwd_cnt, sizeof(int), cmp_freak, (void *)freaks);
 #endif
-       
+
+      // Set a minimum frequency for terms to be removed by the high frequency heuristic
+      // The main reason for removing them is to reduce the runtime, but if significant 
+      // terms are removed then more spurious candidates will need to be examined.
+      // Let's set a threshold of 10% of the number of documents in the collection -- I think
+      // that the threshold should depend upon the corpus size.
+      freq_thresh = qoenv->N / 10;
+      
       for (u = 0; u < qex->qwd_cnt; u++) {
 	v = freaki[u];
 	if (zap[v]) continue;  // Already zapped
-	if (freaks[v] < 100) break;  // Don't want to zap rare terms?
+	// Only apply the threshold if we're close to the specified threshold.  We want to
+	// eliminate terms if the query is much longer than the threshold.
+	if (qex->cg_qwd_cnt <= (qoenv->query_shortening_threshold + 2)
+	    && freaks[v] < freq_thresh) break;  // Don't want to zap too many rare terms
 	zap[v] = TRUE;
 	qex->shortening_codes |= SHORTEN_HIGH_FREQ;
 	if (explain) printf("     Zapped high frequency (%llu) term %d\n", freaks[v], v);
