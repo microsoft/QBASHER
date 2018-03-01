@@ -92,113 +92,136 @@ void create_candidate_generation_query(query_processing_environment_t *qoenv,
     }
     qex->cg_qwd_cnt = qex->qwd_cnt;
   } else {
-    BOOL *zap;
+    BOOL *zap = NULL, memalloc_failed = FALSE;
     byte ig1;
-    int newt, u, v, *freaki, freq_thresh = 0;
+    int newt, u, v, *freaki = NULL, freq_thresh = 0;
     u_char *wd;
-    u_ll occurrence_count, ig2, *freaks;
+    u_ll occurrence_count, ig2, *freaks = NULL;
 ;
 
     qex->cg_qwd_cnt = qex->qwd_cnt;
     if (explain) printf("     Going to try to shorten from %d to %d terms\n",
 			qex->cg_qwd_cnt, qoenv->query_shortening_threshold);
     
-    zap = (BOOL *)cmalloc(qex->qwd_cnt * sizeof(BOOL), (u_char *)"qshort zap", FALSE);
-    freaks = (u_ll *)cmalloc(qex->qwd_cnt * sizeof(u_ll), (u_char *)"qshort freaks", FALSE);
-    freaki = (int *)cmalloc(qex->qwd_cnt * sizeof(u_ll), (u_char *)"qshort freaki", FALSE);
-    for (t = 0; t < qex->qwd_cnt; t++) {
-      zap[t] = FALSE;
-      freaks[t] = 0;
-      freaki[t] = t;
-    }
-
-    //    1. Remove non-existent words 
-    for (u = 0; u < qex->qwd_cnt; u++) {
-      wd = qex->qterms[u];
-      if (*wd == '"' || *wd == '[') continue;  // Never zap phrases or disjunctions
-      vocab_entry = lookup_word(wd, qoenv->ixenv->vocab, qoenv->ixenv->vsz, qoenv->debug);
-      if (vocab_entry == NULL) {
-	// Term not found.  Zap it!
-	zap[u] = TRUE;
-	qex->shortening_codes |= SHORTEN_NOEXIST;
-	if (explain) printf("     Zapped non-existent term %d\n", u);
-	--qex->cg_qwd_cnt;
-	--distinct_terms;  // Don't break cos we want to remove ALL non-existent words
-	freaks[u] = 0;
+    zap = (BOOL *)malloc(qex->qwd_cnt * sizeof(BOOL));
+    if (zap  == NULL) memalloc_failed = TRUE;
+    else {
+      freaks = (u_ll *)malloc(qex->qwd_cnt * sizeof(u_ll));
+      if (freaks  == NULL) {
+	memalloc_failed = TRUE;
+	free(zap);
       } else {
-	// Save the occurrence frequency to avoid extra lookups.
-	vocabfile_entry_unpacker(vocab_entry, MAX_WD_LEN + 1, &occurrence_count, &ig1, &ig2);
-	freaks[u] = occurrence_count;
-      }
-    }
-
-    if (distinct_terms > qoenv->query_shortening_threshold) {
-      //    3. Remove words which are all digits
-      for (u = 0; u < qex->qwd_cnt; u++) {
-	if (zap[u]) continue;  // Already zapped
-	wd = qex->qterms[u];
-	if (*wd == '"' || *wd == '[') continue;  // Never zap phrases or disjunctions
-	if (all_digits(wd)) {
-	  zap[u] = TRUE;
-	  qex->shortening_codes |= SHORTEN_ALL_DIGITS;
-	  if (explain) printf("     Zapped all-numeric term %d\n", u);
-	  --qex->cg_qwd_cnt;
-	  if (--distinct_terms <= qoenv->query_shortening_threshold) break;
+	freaki = (int *)malloc(qex->qwd_cnt * sizeof(u_ll));
+	if (freaki  == NULL) {
+	  memalloc_failed = TRUE;
+	  free(zap);
+	  free(freaks);
 	}
       }
     }
 
+    if (memalloc_failed) {
+      // just copy the terms over
+      for (t = 0; t < qex->qwd_cnt; t++) {
+	qex->cg_qterms[t] = qex->qterms[t];
+      }
+      qex->cg_qwd_cnt = qex->qwd_cnt;
+    } else {
+      // We're actually going to do some shortening ... probably
+      for (t = 0; t < qex->qwd_cnt; t++) {
+	zap[t] = FALSE;
+	freaks[t] = 0;
+	freaki[t] = t;
+      }
 
-    if (distinct_terms > qoenv->query_shortening_threshold) {
-      //    4. Remove the words with the highest occurrence frequency
+      //    1. Remove non-existent words 
+      for (u = 0; u < qex->qwd_cnt; u++) {
+	wd = qex->qterms[u];
+	if (*wd == '"' || *wd == '[') continue;  // Never zap phrases or disjunctions
+	vocab_entry = lookup_word(wd, qoenv->ixenv->vocab, qoenv->ixenv->vsz, qoenv->debug);
+	if (vocab_entry == NULL) {
+	  // Term not found.  Zap it!
+	  zap[u] = TRUE;
+	  qex->shortening_codes |= SHORTEN_NOEXIST;
+	  if (explain) printf("     Zapped non-existent term %d\n", u);
+	  --qex->cg_qwd_cnt;
+	  --distinct_terms;  // Don't break cos we want to remove ALL non-existent words
+	  freaks[u] = 0;
+	} else {
+	  // Save the occurrence frequency to avoid extra lookups.
+	  vocabfile_entry_unpacker(vocab_entry, MAX_WD_LEN + 1, &occurrence_count, &ig1, &ig2);
+	  freaks[u] = occurrence_count;
+	}
+      }
+
+      if (distinct_terms > qoenv->query_shortening_threshold) {
+	//    3. Remove words which are all digits
+	for (u = 0; u < qex->qwd_cnt; u++) {
+	  if (zap[u]) continue;  // Already zapped
+	  wd = qex->qterms[u];
+	  if (*wd == '"' || *wd == '[') continue;  // Never zap phrases or disjunctions
+	  if (all_digits(wd)) {
+	    zap[u] = TRUE;
+	    qex->shortening_codes |= SHORTEN_ALL_DIGITS;
+	    if (explain) printf("     Zapped all-numeric term %d\n", u);
+	    --qex->cg_qwd_cnt;
+	    if (--distinct_terms <= qoenv->query_shortening_threshold) break;
+	  }
+	}
+      }
+
+
+      if (distinct_terms > qoenv->query_shortening_threshold) {
+	//    4. Remove the words with the highest occurrence frequency
 #ifdef WIN64
-      // Annoying that Windows, MacOS and Linux don't agree on how to do reentrant qsort.
-      qsort_s(freaki, qex->qwd_cnt, sizeof(int), winmac_cmp_freak, (void *)freaks);
+	// Annoying that Windows, MacOS and Linux don't agree on how to do reentrant qsort.
+	qsort_s(freaki, qex->qwd_cnt, sizeof(int), winmac_cmp_freak, (void *)freaks);
 #elif defined(__APPLE__)
-      qsort_r(freaki, qex->qwd_cnt, sizeof(int), (void *)freaks, winmac_cmp_freak);
+	qsort_r(freaki, qex->qwd_cnt, sizeof(int), (void *)freaks, winmac_cmp_freak);
 #else      
-      qsort_r(freaki, qex->qwd_cnt, sizeof(int), cmp_freak, (void *)freaks);
+	qsort_r(freaki, qex->qwd_cnt, sizeof(int), cmp_freak, (void *)freaks);
 #endif
 
-      // Set a minimum frequency for terms to be removed by the high frequency heuristic
-      // The main reason for removing them is to reduce the runtime, but if significant 
-      // terms are removed then more spurious candidates will need to be examined.
-      // Let's set a threshold of 10% of the number of documents in the collection -- I think
-      // that the threshold should depend upon the corpus size.
-      freq_thresh = qoenv->N / 10;
+	// Set a minimum frequency for terms to be removed by the high frequency heuristic
+	// The main reason for removing them is to reduce the runtime, but if significant 
+	// terms are removed then more spurious candidates will need to be examined.
+	// Let's set a threshold of 10% of the number of documents in the collection -- I think
+	// that the threshold should depend upon the corpus size.
+	freq_thresh = qoenv->N / 10;
       
-      for (u = 0; u < qex->qwd_cnt; u++) {
-	v = freaki[u];
-	if (zap[v]) continue;  // Already zapped
-	// Only apply the threshold if we're close to the specified threshold.  We want to
-	// eliminate terms if the query is much longer than the threshold.
-	if (qex->cg_qwd_cnt <= (qoenv->query_shortening_threshold + 2)
-	    && freaks[v] < freq_thresh) break;  // Don't want to zap too many rare terms
-	zap[v] = TRUE;
-	qex->shortening_codes |= SHORTEN_HIGH_FREQ;
-	if (explain) printf("     Zapped high frequency (%llu) term %d\n", freaks[v], v);
-	--qex->cg_qwd_cnt;
-	if (--distinct_terms <= qoenv->query_shortening_threshold) break;
+	for (u = 0; u < qex->qwd_cnt; u++) {
+	  v = freaki[u];
+	  if (zap[v]) continue;  // Already zapped
+	  // Only apply the threshold if we're close to the specified threshold.  We want to
+	  // eliminate terms if the query is much longer than the threshold.
+	  if (qex->cg_qwd_cnt <= (qoenv->query_shortening_threshold + 2)
+	      && freaks[v] < freq_thresh) break;  // Don't want to zap too many rare terms
+	  zap[v] = TRUE;
+	  qex->shortening_codes |= SHORTEN_HIGH_FREQ;
+	  if (explain) printf("     Zapped high frequency (%llu) term %d\n", freaks[v], v);
+	  --qex->cg_qwd_cnt;
+	  if (--distinct_terms <= qoenv->query_shortening_threshold) break;
+	}
       }
-    }
  
  
-    // Set up the shortened (candidate generation query) by copying over
-    // all the terms that haven't been zapped.  Also create qex->candidate_generation_query
-    // by concatenating all the unzapped terms (with spaces).
-    // 
-    newt = 0;
-    for (t = 0; t < qex->qwd_cnt; t++) {
-      if (!zap[t]) {
-	qex->cg_qterms[newt++] = qex->qterms[t];
+      // Set up the shortened (candidate generation query) by copying over
+      // all the terms that haven't been zapped.  Also create qex->candidate_generation_query
+      // by concatenating all the unzapped terms (with spaces).
+      // 
+      newt = 0;
+      for (t = 0; t < qex->qwd_cnt; t++) {
+	if (!zap[t]) {
+	  qex->cg_qterms[newt++] = qex->qterms[t];
+	}
       }
+      qex->cg_qwd_cnt = newt;
+      free(freaki);
+      free(freaks);
+      freaks = NULL;  // It's non-local
+      free(zap);
     }
-    qex->cg_qwd_cnt = newt;
-    free(freaki);
-    free(freaks);
-    freaks = NULL;  // It's non-local
-    free(zap);
-  } // end of shortening branch of else
+  } // end of shortening branch of main if else
 
   w = qex->candidate_generation_query;
   for (t = 0; t < qex->cg_qwd_cnt; t++) {

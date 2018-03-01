@@ -2093,3 +2093,9 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
        index, except if the query is at least two words longer than
        the threshold.
        
+*** v1.5.137-OS developer1 01 Mar 2018 ***  Bullet proofing and bug
+       fixing.
+    1. Definition of ASCII_GS in common definitions was wrong.  Fixed.
+    2. Calls to cmalloc() in query_shortening.c could cause query
+       processor to take an error exit.  Changed to use emalloc to
+       avoid this.

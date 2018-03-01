@@ -7,7 +7,7 @@
 
 #define IF_HEADER_LEN 4096   // Mustn't change this, except in connection with a change in INDEX_FORMAT
 #define INDEX_FORMAT "QBASHER 1.5"  // This will be written into the header area of the .if file.
-#define QBASHER_VERSION ".136-OS"   // This is relative to the INDEX_FORMAT.  Whenever the index format
+#define QBASHER_VERSION ".137-OS"   // This is relative to the INDEX_FORMAT.  Whenever the index format
 				    // changes this should be reset to .0.  Whenever QBASHI or QBASHQ are
 				    // edited it should be incremented.  It's also written into the
 				    // .if header.
@@ -31,7 +31,7 @@
 #define EASTER_EGG_PATTERN "^gonebut notforgotten$"
 
 #define ASCII_RS 0x1E // ASCII Record Separator (RS)
-#define ASCII_GS 0x1E // ASCII Group Separator (GS)
+#define ASCII_GS 0x1D // ASCII Group Separator (GS)
 
 #define HUGEBUFSIZE 4194304   // 4 MB (for i/o buffers)
 #define IUNDEF 987654321  // Undefined parameter for integer arguments
