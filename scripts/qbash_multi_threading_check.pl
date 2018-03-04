@@ -38,8 +38,8 @@ die "Comparison script $comparator is not there or not executable\n"
 
 
 
-$reffile = "/tmp/A";
-$qsfile = "/tmp/B";
+$reffile = "tmp_multi_threading_A";
+$qsfile = "tmp_multi_threading_B";
 
 foreach $qset (@qsets) {
     print " ------- $qset --------\n";
@@ -61,4 +61,6 @@ foreach $qset (@qsets) {
 }
 	
 print "      Wonderful!!\n\n";
+unlink $reffile;
+unlink $qsfile;
 exit(0);

@@ -27,8 +27,8 @@ $tqdir = "../test_queries";
 $ix = "../test_data/wikipedia_titles";
 
 $base_qset = "$tqdir/emulated_log.q";
-$qset = "/tmp/qset_c-sharp";
-$tfile = "/tmp/c-sharp_timing.out";
+$qset = "tmp_qset_c-sharp";
+$tfile = "tmp_c-sharp_timing.out";
 $|++;
 
 die "Usage: $0 <QBASHQ_binary> 
@@ -186,6 +186,8 @@ if ($errs) {
     print "\n\n$0 Failed:  $errs errors encountered.\n";
 } else {
     print "\n\n       Top hole, what!!\n";
+    unlink $qset;
+    unlink $tfile;
 }
 exit($errs);
 
