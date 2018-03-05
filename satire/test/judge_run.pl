@@ -139,8 +139,8 @@ print "
 Successes: $successes
 Failures: $failures
 
-Average NDCG@$depth: ", sprintf("%6.4f", $ave_ndcg), "
-Average P@$depth: $ave_p;
+Average NDCG\@$depth: ", sprintf("%6.4f", $ave_ndcg), "
+Average P\@$depth: $ave_p;
     ";
 
 exit(0);
