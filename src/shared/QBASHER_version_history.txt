@@ -2099,3 +2099,6 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
     2. Calls to cmalloc() in query_shortening.c could cause query
        processor to take an error exit.  Changed to use emalloc to
        avoid this.
+
+*** v1.5.138-OS developer2 05 Mar 2018 *** Developer2 practice commit
+    1. No real change...
