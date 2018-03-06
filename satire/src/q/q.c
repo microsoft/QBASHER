@@ -16,10 +16,9 @@
 
 #define MAX_QTERMS 100
 #define MAX_FGETS 2048
+#define ACC_BLOCK_SIZE 1024  // The accumulator array is divided into blocks containing ACC_BLOCK_SIZE accumulators 
 
 params_t params;
-
-static u_ll total_postings_processed = 0;
 
 static void print_usage(char *progname, arg_t *args) {
   printf("\n\nUsage: %s You must specify an indexStem.", progname);
@@ -34,10 +33,95 @@ typedef struct {
   byte *if_pointer;
 } term_control_block_t;
 
+#define NUM_COUNTERS 10
+
+typedef enum {
+  POSTINGS_PROCESSED,
+  ALREADY_IN_HEAP_COMPARISONS,
+  OTHER_HEAP_COMPARISONS,
+  HEAP_ITEMS_MOVED,
+  INSERT_INTO_EMPTY_HEAP,
+  INSERT_INTO_FULL_HEAP,
+  INSERT_INTO_PARTIAL_HEAP,
+  ACC_BLOCKS_USED,
+  ACC_BLOCKS,
+  ACCUMULATORS_USED
+} counter_t;
+  
+  
+static u_ll per_query_counter[NUM_COUNTERS],  global_counter[NUM_COUNTERS] = {0};
+
 
 static term_control_block_t term_control_block[MAX_QTERMS];
 
-static int *accumulators = NULL, *fake_heap = NULL, items_in_fake_heap = 0;
+static int *accumulators = NULL, *fake_heap = NULL, items_in_fake_heap = 0, num_acc_blocks = 0;
+
+static byte *acc_block_dirty_flags = NULL;
+
+
+static void explain_counters() {
+  fprintf(stderr, "Output lines starting with 'COUNTERS-' include a counter type code which is either PQ<qnum> (Per Query)\n"
+	  "or Global) and the values of %d counters:\n"
+	  " 2 - Number of postings processed.\n"
+	  " 3 - Number of comparisons to check whether new item is already in heap.\n"
+	  " 4 - Number of other comparisons with heap items.\n"
+	  " 5 - Number of times an item is moved one slot up or down the heap.\n"
+	  " 6 - Number of times an item was attempted to be inserted into an empty heap.\n"
+	  " 7 - Number of times an item was attempted to be inserted into a full heap.\n"	 
+	  " 8 - Number of times an item was attempted to be inserted into a partially occupied heap.\n"
+	  " 9 - Number of accumulator blocks touched.\n"
+	  "10 - Number of accumulator blocks defined.\n"
+	  "11 - Number of accumulators used.\n\n",
+	 NUM_COUNTERS);
+}
+
+
+static void add_to_global_counters() {
+  int i;
+  for (i = 0; i < NUM_COUNTERS; i++)
+    global_counter[i] += per_query_counter[i];
+}
+
+
+static void zero_counter_array(u_ll *counter_array) {
+  int i;
+  for (i = 0; i < NUM_COUNTERS; i++) counter_array[i] = 0;
+}
+
+
+static void print_per_query_counters(int qnum) {
+  int i;
+  fprintf(stderr, "COUNTERS-PQ%03d  ", qnum);
+  for (i = 0; i < NUM_COUNTERS; i++)  fprintf(stderr, "% 11lld", per_query_counter[i]);
+  fprintf(stderr, "\n");
+}
+
+
+static void print_global_counters() {
+  int i;
+  fprintf(stderr, "COUNTERS-GB      ");
+  for (i = 0; i < NUM_COUNTERS; i++)  fprintf(stderr, "% 11lld", global_counter[i]);
+  fprintf(stderr, "\n");
+}
+
+
+static void zero_accumulators() {
+  // The array of accumulators is divided into blocks of ACC_BLOCK_SIZE accumulators
+  // Each of these is guarded by a dirty flag.   if the dirty flag is not set, it may
+  // be safely assumed that all the accumulators in the block are already zero.
+  // Note that the last block is always a full one, with some accumulators at the
+  // end never being used.
+
+  int b, start;
+  for (b = 0; b < num_acc_blocks; b++) {
+    if (acc_block_dirty_flags[b]) {
+      // dirty flag is set. We need to zero the accumulators in the block
+      start = b * ACC_BLOCK_SIZE;
+      memset((void *)(accumulators + start), 0, ACC_BLOCK_SIZE * sizeof(int));
+      acc_block_dirty_flags[b] = 0;
+    }
+  }
+}
 
 static void insert_in_fake_heap(int docid, int score) {
   // The fake heap is just an array of up to params.k docids, sorted
@@ -47,11 +131,19 @@ static void insert_in_fake_heap(int docid, int score) {
   if (params.debug) fprintf(stderr, "         Inserting docid %d (score %d) in fake_heap.\n",
 		 docid, score);
 
+
+  if (items_in_fake_heap == params.k
+      && score <= accumulators[fake_heap[items_in_fake_heap - 1]]) return; //Skip a whole lot of unnecessary work
+
   // This docid may already be in the heap with a partial score.  Is it?
   for (i = 0; i < items_in_fake_heap; i++) {
+    per_query_counter[ALREADY_IN_HEAP_COMPARISONS]++;
     if (fake_heap[i] == docid) {
       // Yes it is.  Remove it.
-      for (j = i + 1; j < items_in_fake_heap; j++) fake_heap[j - 1] = fake_heap[j];
+      for (j = i + 1; j < items_in_fake_heap; j++) {
+	per_query_counter[HEAP_ITEMS_MOVED]++;
+	fake_heap[j - 1] = fake_heap[j];
+      }
       items_in_fake_heap--;
       break;
     }
@@ -59,6 +151,7 @@ static void insert_in_fake_heap(int docid, int score) {
  
   
   if (items_in_fake_heap == 0) {  // Empty fake heap
+    per_query_counter[INSERT_INTO_EMPTY_HEAP]++;
     fake_heap[items_in_fake_heap++] = docid;
     if (0) fprintf(stderr, "FH: Inserted doc %d as first item\n", docid);
     return;   // --------------------------------->
@@ -67,13 +160,17 @@ static void insert_in_fake_heap(int docid, int score) {
   if (items_in_fake_heap == params.k) {  // It's full
     // Is there going to be a slot for this one?
     if (0) fprintf(stderr, "FH: Inserting %d into full fake heap\n", docid);
-    if (score <= accumulators[fake_heap[params.k - 1]]) return; // ----------no ---->
+    per_query_counter[INSERT_INTO_FULL_HEAP]++;
     for (i = 0; i < items_in_fake_heap; i++) {
+      per_query_counter[OTHER_HEAP_COMPARISONS]++;
       if (score >= accumulators[fake_heap[i]]) {
 	// push down and insert this new docid at position i, dropping off
 	// the current lowest scoring item.
 	lowest = params.k - 1;
-	for (j = lowest; j > i; j--) fake_heap[j] = fake_heap[j - 1];
+	for (j = lowest; j > i; j--) {
+	  per_query_counter[HEAP_ITEMS_MOVED]++;
+	  fake_heap[j] = fake_heap[j - 1];
+	}
 	fake_heap[i] = docid;
 	return;   // --------------------------------->
       }
@@ -84,12 +181,17 @@ static void insert_in_fake_heap(int docid, int score) {
   // The fake heap is only partly full, this one's going to go in somewhere
   if (0) fprintf(stderr, "FH: Inserting %d into fake heap with %d items\n",
 		 docid, items_in_fake_heap);
+  per_query_counter[INSERT_INTO_PARTIAL_HEAP]++;
   for (i = 0; i < items_in_fake_heap; i++) {
+    per_query_counter[OTHER_HEAP_COMPARISONS]++;
     if (score >= accumulators[fake_heap[i]]) {
       // push down and insert this new docid at position i.
       lowest = items_in_fake_heap;
       if (lowest >= params.k) lowest = params.k - 1;
-      for (j = lowest; j > i; j--) fake_heap[j] = fake_heap[j - 1];
+      for (j = lowest; j > i; j--) {
+	per_query_counter[HEAP_ITEMS_MOVED]++;
+	fake_heap[j] = fake_heap[j - 1];
+      }
       fake_heap[i] = docid;
       inserted = TRUE;
       items_in_fake_heap++;
@@ -130,14 +232,16 @@ static int term_lookup(int termid, byte *vocab_in_mem, size_t vocab_terms) {
 
 static void process_query(int queryid, int *query_array, int q_len, byte *vocab_in_mem, byte *if_in_mem,
 			  size_t vocab_size, size_t if_size, int *accumulators) {
-  int q, t = 0, terms_still_going = q_len, docid;
+  int q, t = 0, terms_still_going = q_len, docid, block = 0;
   byte *vocab_entry;
-  u_ll tmp, if_offset, postings_processed = 0;
+  u_ll tmp, if_offset;
 
   if (params.debug) fprintf(stderr, "Q: Processing query %d.  %d accumulators.\n",
 			    queryid, params.numDocs);
 
-  memset(accumulators, 0, params.numDocs * sizeof(int));
+  //memset(accumulators, 0, params.numDocs * sizeof(int));
+  per_query_counter[ACC_BLOCKS] = num_acc_blocks;
+  zero_accumulators();
   memset(fake_heap, 0, params.k * sizeof(int));
   memset(term_control_block, 0,  q_len * sizeof(term_control_block_t));
   
@@ -235,15 +339,23 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
 	docid = (int) make_ull_from_n_bytes(term_control_block[chosen].if_pointer, BYTES_FOR_DOCID);
 	if (params.debug) fprintf(stderr, "   .. adding %d to %d to make new score for doc %d\n",
 		       max_qscore, accumulators[docid], docid);
+	// Dealing with the accumulators
+	block = docid / ACC_BLOCK_SIZE;
+	if (acc_block_dirty_flags[block] == 0) {
+	  per_query_counter[ACC_BLOCKS_USED]++;
+	  acc_block_dirty_flags[block] = 1;
+	}
+	if (accumulators[docid] == 0) per_query_counter[ACCUMULATORS_USED]++;
 	accumulators[docid] += max_qscore;
 	insert_in_fake_heap(docid, accumulators[docid]);	
 	term_control_block[chosen].if_pointer += BYTES_FOR_RUN_LEN;
       }
 
       term_control_block[chosen].postings_remaining -= term_control_block[chosen].current_run_len;
-      postings_processed += term_control_block[chosen].current_run_len;
+      per_query_counter[POSTINGS_PROCESSED] += term_control_block[chosen].current_run_len;
      
-      if (params.postingsCountCutoff > 0 && postings_processed > params.postingsCountCutoff) {
+      if (params.postingsCountCutoff > 0
+	  && per_query_counter[POSTINGS_PROCESSED] > params.postingsCountCutoff) {
 	if (params.debug)
 	  fprintf(stderr, "Early termination of query %d due to postings count: > %d\n",
 		  queryid, params.postingsCountCutoff); 
@@ -273,7 +385,6 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
 
   }
 
-  total_postings_processed += postings_processed;
 
   // ------ now produce the ranking ---------
   if (params.debug) fprintf(stderr, "Q: Producing a ranking.\n");
@@ -307,7 +418,7 @@ int main(int argc, char **argv) {
     
 
   setvbuf(stderr, NULL, _IONBF, 0);
-  setvbuf(stdout, NULL, _IONBF, 0);
+  //setvbuf(stdout, NULL, _IONBF, 0);
   
   initialiseParams(&params);
   fprintf(stderr, "Q: Params initialised\n");
@@ -342,8 +453,10 @@ int main(int argc, char **argv) {
   if_in_mem = mmap_all_of((byte *)fname_buf, &if_size, FALSE, &ifh, &ifmh, &error_code);
   touch_all_pages(if_in_mem, if_size);   // warmup
 
-  accumulators = cmalloc(params.numDocs * sizeof(int), (u_char *)"accumulators", FALSE);
-  
+  num_acc_blocks = (params.numDocs / ACC_BLOCK_SIZE) + 1;   
+  accumulators = cmalloc(num_acc_blocks * ACC_BLOCK_SIZE * sizeof(int), (u_char *)"accumulators", FALSE);
+  acc_block_dirty_flags = cmalloc(num_acc_blocks, (u_char *)"acc_block_dirty_flags", FALSE);
+  memset(acc_block_dirty_flags, 1, num_acc_blocks);  // Set all the accumulator blocks as DIRTY
   fake_heap = cmalloc(params.k * sizeof(int), (u_char *)"fake_heap", FALSE);
  
   free(fname_buf);
@@ -353,6 +466,7 @@ int main(int argc, char **argv) {
 			    "Queries consist of a numeric query-id, a tab, then a list of\n"
 			    "space separated (integer) termids.\n");
   start_time = what_time_is_it();
+  zero_counter_array(global_counter);
   while (fgets(fgets_buf, MAX_FGETS, stdin) != NULL) {
     if (params.debug) fprintf(stderr, "\n\nQ: Read and process a line.\n%s\n", fgets_buf);
     q_count++;
@@ -381,8 +495,11 @@ int main(int argc, char **argv) {
     }
 
     if (params.debug) fprintf(stderr, "    terms in this query: %d\n", t);
+    zero_counter_array(per_query_counter);
     process_query(queryid, query_array, t, vocab_in_mem, if_in_mem, vocab_size, if_size,
 		  accumulators);
+    print_per_query_counters(q_count);
+    add_to_global_counters();
     if (q_count % 10 == 0) fprintf(stderr, "%8d\n", q_count);
   }
     
@@ -392,9 +509,12 @@ int main(int argc, char **argv) {
   free(accumulators);
   free(fake_heap);
 
-  fprintf(stderr, "Q: %d queries processed in %.3f sec. since warmup.\n"
-	  "Q: Total postings processed: %llu\n",
-	  q_count, what_time_is_it() - start_time, total_postings_processed);
+  print_global_counters();
+
+  explain_counters();
+
+  fprintf(stderr, "Q: %d queries processed in %.3f sec. since warmup.\n",
+	  q_count, what_time_is_it() - start_time);
   
 
 }

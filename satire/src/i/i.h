@@ -7,6 +7,7 @@ typedef struct {
   char *inputFileName;
   char *outputStem;
   int numDocs;
+  int lowScoreCutoff;
 } params_t;
 
 extern params_t params;

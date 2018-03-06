@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     *run_buf, cur_term = -1, r, num_distinct_terms = 0;
   char *ignore, *fgets_buf, *p, *q, *fname_buf;
   size_t vbuf_size = TWOMEG, ibuf_size = TWOMEG, bytes_in_vbuf, bytes_in_ibuf;
-  u_ll if_offset = 0, lines_read = 0, if_bytes_written = 0, total_postings_count = 0;
+  u_ll if_offset = 0, lines_read = 0, if_bytes_written = 0, total_postings_count = 0, postings_ignored_count = 0;
   FILE *inf, *config;
   CROSS_PLATFORM_FILE_HANDLE vocabh, ifh;
   byte bytebuf[sizeof(u_ll)], *vbuf = NULL, *ibuf = NULL;
@@ -142,9 +142,13 @@ int main(int argc, char **argv) {
       exit(1);
     }
     qscore = (int) floor(dscore * SCORE_MULTIPLIER);
-
-
     // Great!  We've read a valid line.  We have termid, docid and qscore
+
+    if (qscore < params.lowScoreCutoff) {
+      // Score is too low.  Treat this posting as though it didn't exist.
+      postings_ignored_count++;
+      continue;
+    }
     if (termid != cur_term) {
       // We've encountered the end of the scores for one term
       num_distinct_terms++;
@@ -203,7 +207,7 @@ int main(int argc, char **argv) {
  
     // Add the current docid to the run_buf
     run_buf[runlen++] = docid;
-  }
+  }  // End of main while loop
 
   // Have to write the final run and the vocab entry for the final term.
   if (cur_term >= 0) {
@@ -246,8 +250,8 @@ int main(int argc, char **argv) {
   close_file(vocabh);
   close_file(ifh);
   free(fgets_buf);
-  printf("I: %llu lines read. %llu postings, %llu bytes written to .if file\n",
-	 lines_read, total_postings_count, if_offset);
+  printf("I: %llu lines read. %llu postings indexed + %llu postings ignored, %llu bytes written to .if file\n",
+	 lines_read, total_postings_count, postings_ignored_count, if_offset);
   printf("I: Time taken: %.3f sec.\n", what_time_is_it() - start_time);
   
 
