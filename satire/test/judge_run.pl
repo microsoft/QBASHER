@@ -79,7 +79,7 @@ while (<R>) {
 	next;
     } else {
 	$fields = $#f + 1;
-	die "Error: Non-empty lines in $rsltsfile must have either 6 fields (TREC) or 3 (Bhaskar)
+	die "Error: Non-empty lines in $rsltsfile must have either 6 fields (TREC) or 4 (Bhaskar)
 Offending line was $_
 It's field count was $fields\n";
     }

@@ -400,8 +400,9 @@ static void process_query(int queryid, int *query_array, int q_len, byte *vocab_
   for (t = 0; t < items_in_fake_heap; t++) {
     //    printf("   %5d %7d %7d   # rank, docid, score\n",
     //	   t + 1, fake_heap[t], accumulators[fake_heap[t]]);
-    printf("%3d Q0 %7d %5d %7d SATIRE\n", queryid, fake_heap[t],
-	   t + 1, accumulators[fake_heap[t]]);
+    //    printf("%3d Q0 %7d %5d %7d SATIRE\n", queryid, fake_heap[t],
+    //     t + 1, accumulators[fake_heap[t]]);
+	printf("%d\t%d\t%d\tSATIRE\n", queryid, fake_heap[t], t + 1);
   }
   // printf("\n"); 
 }
