@@ -6,6 +6,7 @@
 *.ko
 *.obj
 *.elf
+*.iobj
 
 # Linker output
 *.ilk
@@ -41,6 +42,9 @@
 *.su
 *.idb
 *.pdb
+*.ipdb
+*.db
+*.opendb
 
 # Kernel Module Compile Results
 *.mod*
@@ -50,3 +54,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Log files
+*.log
+*.tlog
+
+# User settings
+*.suo
