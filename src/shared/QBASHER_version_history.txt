@@ -2102,3 +2102,13 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
 
 *** v1.5.138-OS developer2 05 Mar 2018 *** Developer2 practice commit
     1. No real change...
+
+*** v1.5.139-OS developer1 13 Mar 2018 ***  Refining the query input 
+       and result output specification mechanisms in the C# front-end.
+	1. Remove the fallback to looking in wikipedia_titles directory -- 
+	   it made no sense.
+	2. Use the file_query_batch directly in the C#, don't pass it off to
+	   the DLL.
+	3. Remove the file_output argument and leave issueResponse() writing
+	   to standard out.  Developer2 thinks he can handle the stdout
+	   with Aether using redirections. 

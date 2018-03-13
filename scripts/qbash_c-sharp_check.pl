@@ -94,13 +94,14 @@ if (! ($rslts =~/Ancient Agora/s)){
     print "\nSharedFileStore.ini:             [PASS]\n\n";
 }
 
-print "\n\nAnd that it can deal with -file_output and -file_query_batch in addition to SharedFileStore.ini. Note
-that these files must end in .output and .query_batch respecively and must live in the index directory.\n";
-
-$cmd = "$qp -index_dir=$ix -pq='Ancient Agora' -file_output=QBASH.output -file_query_batch=QBASH.query_batch";
-$rslts = `$cmd ; cat $ix/QBASH.output`;
+print "\n\nAnd that it can deal with -file_query_batch in addition to SharedFileStore.ini.\n";
+$cmd = "echo 'albert sidney johnston' > $qset";
+$code = system($cmd);
+die "Can't echo 'ancient agora' to $qset\n" if $code;
+$cmd = "$qp -index_dir=$ix -file_query_batch=$qset";
+$rslts = `$cmd`;
 die "Command $cmd failed with code $?\n" if $?;
-if (! ($rslts =~/Ancient Agora/s)){
+if (! ($rslts =~/Albert Sidney Johnston/s)){
     print "\nSharedFileStore.ini++:             [FAIL]\n";
     $errs++;
     print "Command was: '$cmd\n\nResults were\n $rslts";

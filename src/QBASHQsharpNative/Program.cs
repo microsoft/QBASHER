@@ -149,15 +149,15 @@ namespace QBASHQsharpNative
             }
         }
 
-        static void issueResponseB(ref byte[] boater, Int32 len)
-        {
-            System.Text.Encoding utf8_encoding = System.Text.Encoding.UTF8;
-            int elts = boater.Length;
-            Console.WriteLine("Boater length: {0}", elts);
-            Console.Out.Flush();
-            string s = new string(utf8_encoding.GetChars(boater, 0, len));
-            Console.WriteLine("{0}", s);
-        }
+        //        static void issueResponseB(ref byte[] boater, Int32 len)  
+        //        {
+        //System.Text.Encoding utf8_encoding = System.Text.Encoding.UTF8;
+        //   int elts = boater.Length;
+        //Console.WriteLine("Boater length: {0}", elts);
+        //  Console.Out.Flush();
+        //  string s = new string(utf8_encoding.GetChars(boater, 0, len));
+        //  Console.WriteLine("{0}", s);
+        //}
 
 
 
@@ -223,9 +223,8 @@ namespace QBASHQsharpNative
             int q;
             Stopwatch stopWatch = new Stopwatch();
 
-            string line, queriesIn = "", resultsOut = "",
-                ixDir = @"../test_data/wikipedia_titles", listOfPaths = "", partialQuery = "";
-            string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,", "/QBASH.query_batch,",
+            string line, queriesIn = "", ixDir = "", listOfPaths = "", partialQuery = "";
+            string[] files = {"/QBASH.forward,", "/QBASH.if,", "/QBASH.vocab,", "/QBASH.doctable,", "/QBASH.config,",
                 "/QBASH.segment_rules,", "/QBASH.substitution_rules",
                 //"/QBASH.output" 
             };
@@ -236,8 +235,7 @@ namespace QBASHQsharpNative
                 string[] argval = arg.Split(delims);
                 if (argval[0] == "-index_dir") ixDir = argval[1];
                 else if (argval[0] == "-object_store_files") listOfPaths = argval[1];
-                else if (argval[0] == "-file_output") resultsOut = argval[1];
-                else if (argval[0] == "-file_query_batch") queriesIn = argval[1];
+                 else if (argval[0] == "-file_query_batch") queriesIn = argval[1];
                 else if (argval[0] == "-query_streams") queryStreams = Int32.Parse(argval[1]);
                 else if (argval[0] == "-pq") partialQuery = argval[1];
                 else if (argval[0] == "-help")
@@ -247,7 +245,6 @@ namespace QBASHQsharpNative
                     Console.WriteLine("  -help                    - show this message.");
                     Console.WriteLine("  -index_dir=<directory>   - A directory potentially containing a single QBASHER index.");
                     Console.WriteLine("  -object_store_files=<comma-separated list of files> - Explicit paths to all the index files. (Instead of index_dir.)");
-                    Console.WriteLine("  -file_output=<filename> - File to which normal output will be written.  Used only if other files come from SharedFileStore.ini.");
                     Console.WriteLine("  -file_query_batch=File from which a batch of queries are read. Used only if other files come from SharedFileStore.ini.");
                     Console.WriteLine("  -query_streams=<integer> - The degree of parallelism used when running queries.");
                     Console.WriteLine("  -pq=<query_string> - A single QBASHER query string.\n");
@@ -263,7 +260,12 @@ namespace QBASHQsharpNative
             // by the Object Store coproc.  Otherwise,  compose the default one.  
             if (listOfPaths.Equals(""))
             {
-                Console.WriteLine("object_store_files not specified."); 
+                if (ixDir.Equals(""))
+                {
+                    Console.WriteLine("Error: Must specify either -index_dir= or -object_store_files=.");
+                    Environment.Exit(1);
+                }
+
                 if (File.Exists(ixDir + "/SharedFileStore.ini"))
                 {
                     Console.WriteLine("Reading file list from {0}", ixDir + "/SharedFileStore.ini");
@@ -281,29 +283,29 @@ namespace QBASHQsharpNative
                                     listOfPaths += (ixDir + "/" + file + ",");
                                 }
                             }  // end of loop reading .ini lines.
-                            if (queriesIn != "") listOfPaths += (ixDir + "/" + queriesIn + ",");
-                            if (resultsOut != "") listOfPaths += (ixDir + "/" + resultsOut + ",");
                         }
                     }
                     catch (IOException e)
                     {
                         Console.WriteLine("{0} exists but can't be read.  Error was {1}", ixDir + "/SharedFileStore.ini", e);
+                        Environment.Exit(1);
                     }
 
                 }
-                else
+                else 
                 {
                     // If the .ini file doesn't exist, compose the default path.
-                    Console.WriteLine("In the absence of an object_store_files= argument or a SharedFileStore.ini, composing file list from hard-coded names.");
+                    Console.WriteLine("Note: {0} does not exist.  Looking for standard file names in {1}.", 
+                        ixDir + "/SharedFileStore.ini", ixDir);
                     foreach (string file in files)
                     {
                         listOfPaths += (ixDir + file);
                     }
                 }
-            }
+             }
             else
             {
-                Console.WriteLine("Using file list supplied in object_store_files= parameter");
+                Console.WriteLine("Using file list supplied in object_store_files= parameter.");
             }
 
 
@@ -343,9 +345,9 @@ namespace QBASHQsharpNative
                 processOneInputLine(partialQuery);
                 queries_processed++;
             }
-            else if (listOfPaths.Contains(".query_batch"))
+            else if (queriesIn != "")  // Reading from the file specified in -file_query_batch=
             {
-                using (StreamReader reader = File.OpenText(ixDir + "/QBASH.query_batch"))  // from a file.........................
+                using (StreamReader reader = File.OpenText(queriesIn))  // from a file.........................
                 {
                     while ((line = reader.ReadLine()) != null)
                     {
@@ -355,7 +357,7 @@ namespace QBASHQsharpNative
 
                 }
             }
-            else
+            else  // Reading from standard input
             {
                 // Loop over queries and options read in from console
                 Console.WriteLine("Please enter queries (or tab-separated queries + options) one per line.");
