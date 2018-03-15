@@ -189,7 +189,7 @@ have not yet had the 'x\_' dropped.
 
 In each of the following examples, it is assumed that the current
 working directory is one level above the \texttt{src} directory, and
-that there is a \texttt{data\_data/wikipedia\_titles} directory containing a file
+that there is a \texttt{test\_data/wikipedia\_titles} directory containing a file
 \texttt{QBASH.forward} in TSV format with the records to be
 indexed in column one, static weights in column two, text for display
 in column three.
@@ -199,7 +199,7 @@ in column three.
 
 {\footnotesize
 \begin{verbatim}
-src/visual_studio/x64/Release/QBASHI.exe index_dir=data
+src/visual_studio/x64/Release/QBASHI.exe -index_dir=test_data/wikipedia_titles
 \end{verbatim}
 }
 

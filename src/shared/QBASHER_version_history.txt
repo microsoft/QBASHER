@@ -2112,3 +2112,7 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
 	3. Remove the file_output argument and leave issueResponse() writing
 	   to standard out.  Developer2 thinks he can handle the stdout
 	   with Aether using redirections. 
+
+*** v1.5.140-OS developer2 14 Mar 2018 *** Fixing some bugs in the documentation
+	1. data_data/wikipedia_titles -> test_data/wikipedia_titles
+	2. src/visual_studio/x64/Release/QBASHI.exe index_dir=data -> src/visual_studio/x64/Release/QBASHI.exe -index_dir=test_data/wikipedia_titles
