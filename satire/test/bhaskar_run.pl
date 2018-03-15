@@ -28,7 +28,7 @@ chdir "../data";
 #print "bhaskar.T_per_query written\n";
 
 # ------------------------------ Step 3 Building the index -----------------------------
-$cmd = "../src/i.exe inputFileName=DINNER/tds.txt outputStem=../test/bhaskar numDocs=1842879 -lowScoreCutoff=100";
+$cmd = "../src/i.exe inputFileName=DINNER/tds.txt outputStem=../test/bhaskar numDocs=1842879 -maxQuantisedValue=1000 -lowScoreCutoff=100";
 die "Indexing command $cmd failed \n"
     if system($cmd);
 

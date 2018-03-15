@@ -19,6 +19,7 @@ arg_t args[] = {
   { "outputStem", ASTRING, (void *)&(params.outputStem), "This will be the stem of the index files produced."},
   { "numDocs", AINT, (void *)&(params.numDocs), "How many documents in the corpus."},
   { "lowScoreCutoff", AINT, (void *)&(params.lowScoreCutoff), "If a quantised T-D score is less than this, it will not be included inthe index."},
+  { "maxQuantisedValue", AINT, (void *)&(params.maxQuantisedValue), "The floating point scores are multiplied by this and then floor()ed."},
   { "", AEOL, NULL, "" }
   };
 
@@ -28,11 +29,17 @@ void initialiseParams(params_t *params) {
   params->outputStem = NULL;
   params->numDocs = 0;
   params->lowScoreCutoff = 1;  // No point in indexing scores of zero
+  params->maxQuantisedValue = 10000; 
 }
 
 
 void sanitiseParams(params_t *params) {
   // Any range checking needed?
+  int max = (1 << (8 * BYTES_FOR_QSCORE)) - 1;
+  if (params->maxQuantisedValue < 2 || params->maxQuantisedValue > max) {
+    printf("Error: maxQuantisedValue must be at least 2 and at most %d\n", max);
+    exit(1);
+  }
 }
 
 

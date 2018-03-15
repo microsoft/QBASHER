@@ -19,7 +19,7 @@
 
 #define TWOMEG 2097152
 #define MAX_FGETS 1024  // It only has to be big enough for three numbers.
-#define SCORE_MULTIPLIER 10000
+
 params_t params;
 
 static void print_usage(char *progname, arg_t *args) {
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
       printf("Error: Score %10g in line %s is not in range 0 - 1\n", dscore, fgets_buf);
       exit(1);
     }
-    qscore = (int) floor(dscore * SCORE_MULTIPLIER);
+    qscore = (int) floor(dscore * params.maxQuantisedValue);
     // Great!  We've read a valid line.  We have termid, docid and qscore
 
     if (qscore < params.lowScoreCutoff) {

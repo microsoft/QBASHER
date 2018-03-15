@@ -8,6 +8,7 @@ typedef struct {
   char *outputStem;
   int numDocs;
   int lowScoreCutoff;
+  int maxQuantisedValue;
 } params_t;
 
 extern params_t params;
