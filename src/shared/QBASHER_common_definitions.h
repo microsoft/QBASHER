@@ -16,7 +16,8 @@
 #define MAX_DOCBYTES_NORMAL 10240     // In the "normal" case
 #define MAX_DOCBYTES_BIGGER 10240000  // With the bigger_trigger option
 
-#define MAX_RESULT_LEN 2000    // This is the maximum number of bytes in the string returned for any result. (QBASHQ)
+//#define MAX_RESULT_LEN 2000    // This is the maximum number of bytes in the string returned for any result. (QBASHQ)
+#define MAX_RESULT_LEN 16384    // This is the maximum number of bytes in the string returned for any result. (QBASHQ)
 #define MAX_WD_LEN 15  // Words longer than this will be truncated.
 #define MAX_BIGRAM_LEN 31 //
 #define MAX_REP_LEN 20

@@ -2116,3 +2116,8 @@ QBASHQ:      1. While doing this, noticed that the number of parallel query stre
 *** v1.5.140-OS developer2 14 Mar 2018 *** Fixing some bugs in the documentation
 	1. data_data/wikipedia_titles -> test_data/wikipedia_titles
 	2. src/visual_studio/x64/Release/QBASHI.exe index_dir=data -> src/visual_studio/x64/Release/QBASHI.exe -index_dir=test_data/wikipedia_titles
+
+*** v1.5.141-OS developer2 28 May 2018 *** Increasing maximum result length and minor bug fix
+	1. MAX_OS_RESULT_LEN 2000 -> 16384
+	2. MAX_RESULT_LEN 1024 -> 8912
+	3. Fixed bug so that QbashQSharpNative returns '10' instead of ':' for the number of matched terms when 10 terms were matched (edge case)

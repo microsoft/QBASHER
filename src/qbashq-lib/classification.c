@@ -1053,7 +1053,7 @@ static u_char *code_flags_and_terms_which_matched(query_processing_environment_t
   q = qex->qwd_cnt;
   if (q > 999) q = 999;
   *w++ = '\t';
-  if (q > 100) {
+  if (q >= 100) {
     int dig[3];
     dig[2] = q % 10;
     q /= 10;
@@ -1064,7 +1064,7 @@ static u_char *code_flags_and_terms_which_matched(query_processing_environment_t
     *w++ = (byte)(dig[1] + '0');
     *w++ = (byte)(dig[2] + '0');
   }
-  else if (q > 10) {
+  else if (q >= 10) {
     int dig[2];
     dig[1] = q % 10;
     q /= 10;
@@ -1168,6 +1168,7 @@ void classifier(query_processing_environment_t *local_qenv, book_keeping_for_one
     if (local_qenv->debug >= 1) printf("Details:  %s\n", details);
     if (local_qenv->include_result_details) {
       what2show = what_to_show((long long)(doc - forward), doc, &showlen, local_qenv->displaycol, details);
+      if (0) printf("    what2show: %s\n", what2show);
       if (details != NULL) free(details);
       details = NULL;
     }
